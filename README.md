@@ -67,8 +67,8 @@ dart.finstate('삼성전자', 2018, reprt_code='11013')
 ```
 
 ## more information
-* [Users Guide]( https://nbviewer.jupyter.org/github/FinanceData/OpenDartReader/blob/master/docs/OpenDartReader_users_guide.ipynb)
-* [Reference Manual]( https://nbviewer.jupyter.org/github/FinanceData/OpenDartReader/blob/master/docs/OpenDartReader_reference_manual.ipynb)
+* [Users Guide]( https://nbviewer.jupyter.org/github/FinanceData/OpenDartReader/blob/master/docs/OpenDartReader_users_guide.ipynb) 사용자 안내서
+* [Reference Manual]( https://nbviewer.jupyter.org/github/FinanceData/OpenDartReader/blob/master/docs/OpenDartReader_reference_manual.ipynb) 레퍼런스 메뉴얼
 
 
 #### 2020 [FinanceData.KR](http://financedata.kr) | [facebook.com/financedata](http://facebook.com/financedata)
