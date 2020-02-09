@@ -67,4 +67,3 @@ dart.finstate('삼성전자', 2018, reprt_code='11013')
 ```
 
 #### 2020 [FinanceData.KR](http://financedata.kr) | [facebook.com/financedata](http://facebook.com/financedata)
-```
