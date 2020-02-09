@@ -1,5 +1,3 @@
-# OpenDartReader
-
 <img width="40%" src="https://i.imgur.com/FMsL0id.png" >
 
 `OpenDartReader`는 금융감독원 전자공시 시스템의 "Open DART"서비스 API를 손쉽게 사용할 수 있도록 돕는 오픈소스 라이브러리 입니다.
