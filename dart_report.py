@@ -31,6 +31,6 @@ def report(api_key, corp_code, key_word, bsns_year, reprt_code='11011'):
     r = requests.get(url, params=params)
     jo = json.loads(r.text)
     
-    if 'list' in jo:
-        return json_normalize(jo, 'list')
-    return None
+    if 'list' not in jo:
+        return None
+    return json_normalize(jo, 'list')
