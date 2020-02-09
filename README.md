@@ -32,7 +32,7 @@ pip install --upgrade opendartreader
 import OpenDartReader
 
 # API KEY 를 지정하여 OpenDartReader 객체 생성
-api_key = 'd81e18ac719d1c1e4ec7899ef21a737ab6cbb4c7'
+api_key = 'd81e18ac719d1c1e4ec7899ef21a737ab6cbb4c7' # (이 API-KEY 예제 입니다. 별도 발급받으세요)
 dart = OpenDartReader(api_key)
 
 # 삼성전자의 정기보고서('A') 2019년
