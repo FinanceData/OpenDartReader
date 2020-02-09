@@ -1,4 +1,4 @@
-# OpenDartReader - Users Guide
+# OpenDartReader
 
 <img width="40%" src="https://i.imgur.com/FMsL0id.png" >
 
