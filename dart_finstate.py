@@ -1,3 +1,6 @@
+#-*- coding:utf-8 -*-
+# 2020 FinanceData.KR http://financedata.kr fb.com/financedata
+
 import io
 import zipfile
 import requests

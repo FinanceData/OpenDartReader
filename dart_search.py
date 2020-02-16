@@ -1,3 +1,6 @@
+#-*- coding:utf-8 -*-
+# 2020 FinanceData.KR http://financedata.kr fb.com/financedata
+
 import requests
 import zipfile
 import io
@@ -9,7 +12,7 @@ from pandas.io.json import json_normalize
 
 # 1. 공시정보 - 공시검색(목록)
 def list(api_key, corp_code, start=None, end=None, kind='', kind_detail='', final=True):
-    start = datetime(1970, 1, 1) if start==None else pd.to_datetime(start)
+    start = datetime(1999, 1, 1) if start==None else pd.to_datetime(start)
     end = datetime.today() if end==None else pd.to_datetime(end)
 
     url = 'https://opendart.fss.or.kr/api/list.json'
