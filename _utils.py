@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import json
 from pandas.io.json import json_normalize
+import difflib
 
 USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36'
 
@@ -113,7 +114,8 @@ def list_date_ex(date=None):
     df.sort_index(inplace=True)
     return df
 
-def sub_docs(s): # rcp_no or URL
+
+def sub_docs(s, match=None): # rcp_no or URL
     url = s if s.startswith('http') else "http://dart.fss.or.kr/dsaf001/main.do?rcpNo={}".format(s)
 
     # 접수번호(rcp_no)에 해당하는 모든 하위 보고서 URL을 추출하여 리스트로 반환
@@ -143,9 +145,13 @@ def sub_docs(s): # rcp_no or URL
         t = BeautifulSoup(r.text, features = "lxml").title
         title = t.text.strip() if t else '' 
         doc_titles = [title]
-    return list(zip(doc_titles, doc_urls))
+    doc_list = list(zip(doc_titles, doc_urls))
+    
+    if match:
+        doc_list = sorted(doc_list, key=lambda x: difflib.SequenceMatcher(None, x[0].replace(' ', ''), match).ratio(), reverse=True)
+    return doc_list
 
-def attach_docs(s): # rcp_no or URL
+def attach_docs(s, match=None): # rcp_no or URL
     url = s if s.startswith('http') else "http://dart.fss.or.kr/dsaf001/main.do?rcpNo={}".format(s)
     headers = {
         'Referer':'https://dart.fss.or.kr/dsap001/guide.do', 
@@ -154,16 +160,18 @@ def attach_docs(s): # rcp_no or URL
     soup = BeautifulSoup(r.text, features = "lxml")
     options = soup.select('#att > option')
 
-    doc_urls = []
+    doc_list = []
     for opt in options:
         if 'rcpNo=' in opt['value']:
-            name = ' '.join(opt.text.strip().split())
             url = 'http://dart.fss.or.kr/dsaf001/main.do?' + opt['value']
-            row = (name, url)
-            doc_urls.append(row)
-    return doc_urls
+            doc_list.extend(sub_docs(url))
 
-def attach_files(s): # rcp_no or URL
+    if match:
+        doc_list = sorted(doc_list, key=lambda x: difflib.SequenceMatcher(None, x[0].replace(' ', ''), match).ratio(), reverse=True)
+    return doc_list
+
+
+def attach_files(s, match=None): # rcp_no or URL
     if s.startswith('http'):
         parts = urlparse(s)
         rcp_no = parse_qs(parts.query)['rcpNo'][0]
@@ -202,4 +210,7 @@ def attach_files(s): # rcp_no or URL
             if find[0] in a['href']:
                 row  = (find[1], url_tmpl.format(find[2], rcp_no, dcm_no))
                 attach_list.append(row)
+                
+    if match:
+        attach_list = sorted(attach_list, key=lambda x: difflib.SequenceMatcher(None, x[0].replace(' ', ''), match).ratio(), reverse=True)
     return attach_list

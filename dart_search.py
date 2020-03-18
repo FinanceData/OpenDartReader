@@ -49,7 +49,6 @@ def list(api_key, corp_code, start=None, end=None, kind='', kind_detail='', fina
         r = requests.get(url, params=params)
         jo = json.loads(r.text)
         df = df.append(json_normalize(jo, 'list'))
-
     return df
 
 # 1-2. 공시정보 - 기업개황
@@ -104,7 +103,7 @@ def document(api_key, rcp_no):
     zf = zipfile.ZipFile(io.BytesIO(r.content))
     info_list = zf.infolist()
     xml_data = zf.read(info_list[0].filename)
-    return xml_data.decode('utf8')
+    return xml_data.decode('euc-kr')
 
 
 # 1-4 고유번호: api/corpCode.xml
