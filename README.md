@@ -31,7 +31,8 @@ import OpenDartReader
 
 # ==== 0. 객체 생성 ====
 # 객체 생성 (API KEY 지정) 
-api_key = 'd81e18ac719d1c1e4ec7899ef21a737ab6cbb4c7'
+api_key = 'a81e18ac719d1e1e4ec2899ef25a737ab6cbb4c7'
+
 dart = OpenDartReader(api_key) 
 
 
@@ -64,11 +65,25 @@ dart.report('046890', '임원', 2018)
 
 
 # ==== 3. 상장기업 재무정보 ====
-# 삼성전자 2018 재무제표
+# 삼성전자 2018 재무제표 
 dart.finstate('삼성전자', 2018) # 사업보고서
 
 # 삼성전자 2018Q1 재무제표
 dart.finstate('삼성전자', 2018, reprt_code='11013')
+
+# 여러종목 한번에
+dart.finstate('00126380,00164779,00164742', 2018)
+dart.finstate('005930, 000660, 005380', 2018)
+dart.finstate('삼성전자, SK하이닉스, 현대자동차', 2018)
+
+# 단일기업 전체 재무제표 (삼성전자 2018 전체 재무제표)
+dart.finstate_all('005930', 2018)
+
+# 재무제표 XBRL 원본 파일 저장 (삼성전자 2018 사업보고서)
+dart.finstate_xml('20190401004781', save_as='삼성전자_2018_사업보고서_XBRL.zip')
+
+# XBRL 표준계정과목체계(계정과목)
+dart.xbrl_taxonomy('BS1')
 
 
 # ==== 4. 지분공시 ====
@@ -90,8 +105,14 @@ dart.list_date_ex('2020-01-03')
 rcp_no = '20190401004781' # 삼성전자 2018년 사업보고서
 dart.sub_docs(rcp_no)
 
+# 제목이 잘 매치되는 순서로 소트
+dart.sub_docs('20190401004781', match='사업의 내용')
+
 # 첨부 문서 제목과 URL
 dart.attach_docs(rcp_no)
+
+# 제목이 잘 매치되는 순서로 소트
+dart.attach_docs(rcp_no, match='감사보고서')
 
 # 첨부 파일 제목과 URL
 dart.attach_files(rcp_no)
