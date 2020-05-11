@@ -38,7 +38,7 @@ dart = OpenDartReader(api_key)
 
 # == 1. 공시정보 검색 ==
 # 삼성전자의 정기보고서('A') 2019년
-dart.list(code='005930', kind='A', start='2019-01-01', end='2019-12-31')
+dart.list('005930', kind='A', start='2019-01-01', end='2019-12-31')
 
 # 삼성전자의 모든 공시 리스트 (1999년 ~ 현재)
 dart.list('005930') 
