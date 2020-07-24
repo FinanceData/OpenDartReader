@@ -11,7 +11,7 @@ from datetime import datetime
 from pandas.io.json import json_normalize
 
 # 1. 공시정보 - 공시검색(목록)
-def list(api_key, corp_code, start=None, end=None, kind='', kind_detail='', final=True):
+def list(api_key, corp_code, start=None, end=None, kind='A', kind_detail='', final=True):
     start = datetime(1999, 1, 1) if start==None else pd.to_datetime(start)
     end = datetime.today() if end==None else pd.to_datetime(end)
 
