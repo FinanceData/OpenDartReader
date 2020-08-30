@@ -6,7 +6,13 @@ import zipfile
 import requests
 import json
 import xml.etree.ElementTree as ET
-from pandas.io.json import json_normalize
+import pandas as pd
+
+try:
+    from pandas import json_normalize
+except ImportError:
+    from pandas.io.json import json_normalize
+
 
 # 3-1 상장기업 재무정보 (단일회사): api/fnlttSinglAcnt.json
 # 3-2 상장기업 재무정보 (다중회사): api/fnlttMultiAcnt.json

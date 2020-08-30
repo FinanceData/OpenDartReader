@@ -8,12 +8,16 @@ import json
 import pandas as pd
 import xml.etree.ElementTree as ET
 from datetime import datetime
-from pandas.io.json import json_normalize
 from . import dart_search
 from . import dart_report
 from . import dart_finstate
 from . import dart_share
 from . import _utils
+
+try:
+    from pandas import json_normalize
+except ImportError:
+    from pandas.io.json import json_normalize
 
 class OpenDartReader():
     # init corp_codes (회사 고유번호 데이터)
@@ -22,7 +26,7 @@ class OpenDartReader():
         self.api_key = api_key
         
     # 1-1. 공시정보 - 공시검색(목록)
-    def list(self, corp, start=None, end=None, kind='', kind_detail='', final=True):
+    def list(self, corp=None, start=None, end=None, kind='', kind_detail='', final=True):
         '''
         DART 보고서의 목록을 DataFrame으로 반환
         * corp: 종목코드 (고유번호, 법인명도 가능)
@@ -35,7 +39,7 @@ class OpenDartReader():
         if corp: # issues/6
             corp_code = self.find_corp_code(corp)
             if not corp_code:
-                raise ValueError('could not find "{}"'.format(corp_code))
+                raise ValueError('could not find "{}"'.format(code))
         else:
             corp_code = ''
         return dart_search.list(self.api_key, corp_code, start, end, kind, kind_detail, final)
@@ -52,8 +56,8 @@ class OpenDartReader():
         return dart_search.company_by_name(self.api_key, corp_code_list)
     
     # 1-3. 공시정보 - 공시서류원본파일
-    def document(self, rcp_no):
-        return dart_search.document(self.api_key, rcp_no)
+    def document(self, rcp_no, cache=True):
+        return dart_search.document(self.api_key, rcp_no, cache=cache)
 
     # 1-4. 공시정보 - 고유번호: corp(종목코드 혹은 회사이름) to 고유번호(corp_code)
     def find_corp_code(self, corp):
@@ -85,10 +89,13 @@ class OpenDartReader():
         return dart_finstate.finstate_xml(self.api_key, rcp_no, save_as=save_as)
 
     # 3-4. 단일회사 전체 재무제표
-    def finstate_all(self, corp, bsns_year, reprt_code='11011'):
+    def finstate_all(self, corp, bsns_year, reprt_code='11011', fs_div='CFS'):
         corp_code = self.find_corp_code(corp)
-        return dart_finstate.finstate_all(self.api_key, corp_code, bsns_year, reprt_code=reprt_code)
-
+        df = dart_finstate.finstate_all(self.api_key, corp_code, bsns_year, reprt_code=reprt_code, fs_div=fs_div)
+        if len(df):
+            return df
+        return dart_finstate.finstate_all(self.api_key, corp_code, bsns_year, reprt_code=reprt_code, fs_div='OFS')
+        
     # 3-5. XBRL 표준계정과목체계(계정과목)
     def xbrl_taxonomy(self, sj_div):
         return dart_finstate.xbrl_taxonomy(self.api_key, sj_div=sj_div)
@@ -104,21 +111,25 @@ class OpenDartReader():
         return dart_share.major_shareholders_exec(self.api_key, corp_code)
 
     # utils: list_date 특정 날짜의 공시보고서 전체
-    def list_date(self, date=None, final=True):
-        return _utils.list_date(date, final)
+    def list_date(self, date=None, final=True, cache=True):
+        return _utils.list_date(date, final, cache=cache)
         
     # utils: list_date 특정 날짜의 공시보고서 전체 (시간포함)
-    def list_date_ex(self, date=None):
-        return _utils.list_date_ex(date)
+    def list_date_ex(self, date=None, cache=True):
+        return _utils.list_date_ex(date, cache=cache)
 
     # utils: subdocument list: 하위문서 제목과 URL (tuple list)
     def sub_docs(self, s, match=None):
         return _utils.sub_docs(s, match=match)
 
-    # utils: sub document list: 하위문서 제목과 URL (tuple list)
+    # utils: sub document list: 첨부 문서 제목과 URL (tuple list)
     def attach_docs(self, s, match=None):
         return _utils.attach_docs(s, match=match)
     
     # utils: attach files url list: 첨부파일 URLs (str list)
-    def attach_files(self, s, match=None):
-        return _utils.attach_files(s, match=match)
+    def attach_files(self, s):
+        return _utils.attach_files(s)
+    
+    # utils: url 을 fn 으로 저장
+    def retrieve(self, url, fn):
+        return _utils.retrieve(url, fn)

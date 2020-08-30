@@ -3,7 +3,13 @@
 
 import requests
 import json
-from pandas.io.json import json_normalize
+import pandas as pd
+
+try:
+    from pandas import json_normalize
+except ImportError:
+    from pandas.io.json import json_normalize
+
 
 def report(api_key, corp_code, key_word, bsns_year, reprt_code='11011'):
     key_word_map = {

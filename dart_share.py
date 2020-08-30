@@ -1,6 +1,11 @@
 import requests
 import json
-from pandas.io.json import json_normalize
+import pandas as pd
+
+try:
+    from pandas import json_normalize
+except ImportError:
+    from pandas.io.json import json_normalize
 
 # 대량보유 상황보고
 def major_shareholders(api_key, corp_code):
