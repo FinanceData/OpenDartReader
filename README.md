@@ -118,11 +118,11 @@ dart.attach_docs(rcp_no, match='감사보고서')
 dart.attach_files(rcp_no)
 ```
 ## more information
-* [Users Guide (사용자 안내서)]( https://nbviewer.jupyter.org/github/FinanceData/OpenDartReader/blob/master/docs/OpenDartReader_users_guide.ipynb) 
-* [Reference Manual (레퍼런스 메뉴얼)]( https://nbviewer.jupyter.org/github/FinanceData/OpenDartReader/blob/master/docs/OpenDartReader_reference_manual.ipynb) 
+* [Users Guide (사용자 안내서)](https://nbviewer.jupyter.org/github/FinanceData/OpenDartReader/blob/master/docs/OpenDartReader_users_guide.ipynb) 
+* [Reference Manual (레퍼런스 메뉴얼)](https://nbviewer.jupyter.org/github/FinanceData/OpenDartReader/blob/master/docs/OpenDartReader_reference_manual.ipynb) 
 
 ## tutorials
-* [OpenDartReader - 비상장 기업 데이터 조회와 활용]( https://nbviewer.jupyter.org/github/FinanceData/OpenDartReader/blob/master/docs/OpenDartReader_unlisting_corps.ipynb) 
+* [OpenDartReader - 비상장 기업 데이터 조회와 활용](https://nbviewer.jupyter.org/12440c298682c44758e4789909a3f333) 
 
 
 #### 2020 [FinanceData.KR](http://financedata.kr) | [facebook.com/financedata](http://facebook.com/financedata)
