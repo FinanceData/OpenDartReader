@@ -57,7 +57,7 @@ def list(api_key, corp_code='', start=None, end=None, kind='', kind_detail='', f
         params['page_no'] = page
         r = requests.get(url, params=params)
         jo = json.loads(r.text)
-        df = df.append(json_normalize(jo, 'list'))
+        df = df.append(json_normalize(jo, 'list'), , ignore_index=True)
     return df
 
 
