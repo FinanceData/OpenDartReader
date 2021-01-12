@@ -214,7 +214,7 @@ def sub_docs(rcp_no, match=None):
 
 def retrieve(url, fn=None):
     fn = fn if fn else url.split('/')[-1]
-    r = requests.get(url, stream=True)
+    r = requests.get(url, stream=True, headers={'User-Agent': USER_AGENT})
     if r.status_code != 200:
         print(r.status_code)
         return None
