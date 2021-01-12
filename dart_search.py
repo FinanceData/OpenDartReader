@@ -57,7 +57,7 @@ def list(api_key, corp_code='', start=None, end=None, kind='', kind_detail='', f
         params['page_no'] = page
         r = requests.get(url, params=params)
         jo = json.loads(r.text)
-        df = df.append(json_normalize(jo, 'list'), ignore_index=True)
+        df = df.append(json_normalize(jo, 'list'))
     return df
 
 
@@ -124,7 +124,13 @@ def document(api_key, rcp_no, cache=True):
     zf = zipfile.ZipFile(io.BytesIO(r.content))
     info_list = zf.infolist()
     xml_data = zf.read(info_list[0].filename)
-    xml_text = xml_data.decode('euc-kr')
+
+    try:
+        xml_text = xml_data.decode('euc-kr')
+    except UnicodeDecodeError as e:
+        xml_text = xml_data.decode('utf-8')
+    except UnicodeDecodeError as e:
+        xml_text = xml_data
 
     # save document to cache 
     with open(fn, 'wt') as f:

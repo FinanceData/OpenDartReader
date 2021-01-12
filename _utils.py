@@ -3,6 +3,7 @@
 
 import os
 import re
+import time
 from datetime import datetime
 from pandas import to_datetime
 from urllib.parse import urlparse, parse_qs, quote_plus
@@ -46,81 +47,46 @@ def _requests_get_cache(url, headers=None):
             return xhtml_text
     return xhtml_text
 
-def list_date(date=None, final=True, cache=True):
-    '''
-    지정한 날짜의 보고서의 목록 전체를 데이터프레임으로 반환
-    * date: 조회일 (기본값: 당일)
-    * final: 최종보고서 여부 (기본값: False)
-    * cache: 요청 캐시 (기본값:True)
-    '''
-    date = pd.to_datetime(date) if date else datetime.today()
-    dt_str = date.strftime('%Y%m%d')
-    fin_rpt = 'Y' if final else 'N' 
-
-    auth = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-    headers = {
-        'Referer':'https://dart.fss.or.kr/dsap001/guide.do', 
-        'User-Agent': USER_AGENT 
-    }
-
-    url_tmpl = 'http://dart.fss.or.kr/api/search.json?'\
-               'page_set=100&auth={auth}&start_dt={start_dt}&end_dt={end_dt}&fin_rpt={fin_rpt}&page_no={page_no}'
-    url = url_tmpl.format(auth=auth, start_dt=dt_str, end_dt=dt_str, fin_rpt=fin_rpt, page_no=1)
-    xhtml_text = _requests_get_cache(url, headers=headers) if cache else requests.get(url, headers).text
-    jo = json.loads(xhtml_text)
-    df = json_normalize(jo, 'list')
-    
-    for page in range(2, jo['total_page']+1):
-        url = url_tmpl.format(auth=auth, start_dt=dt_str, end_dt=dt_str, fin_rpt=fin_rpt, page_no=page)
-        xhtml_text = _requests_get_cache(url, headers=headers) if cache else requests.get(url, headers).text
-        jo = json.loads(xhtml_text)
-        df = df.append(json_normalize(jo, 'list'))
-        
-    cols = {'crp_cd':'corp_code','crp_cls':'corp_cls','crp_nm':'corp_name','flr_nm':'flr_nm',
-                'rcp_dt':'rcept_dt','rcp_no':'rcept_no','rmk':'rm','rpt_nm':'report_nm'}
-    df.rename(columns=cols, inplace=True)
-    if len(df) == 0:
-        return df
-    df['rcept_dt'] = pd.to_datetime(df['rcept_dt'])
-    df.set_index('rcept_dt', inplace=True)
-    return df.sort_values('rcept_no')
-
+      
 def list_date_ex(date=None, cache=True):
     '''
-    지정한 날짜의 보고서의 목록 전체를 데이터프레임으로 반환 (시간 포함)
+    지정한 날짜의 보고서의 목록 전체를 데이터프레임으로 반환 합니다(시간 포함)
     * date: 조회일 (기본값: 당일)
-    * cache: 요청 캐시 (기본값:True)
     '''
     date = pd.to_datetime(date) if date else datetime.today() 
     date_str = date.strftime('%Y.%m.%d')
-    headers = {
-        'Referer':'http://dart.fss.or.kr/dsac001/mainAll.do',
-        'User-Agent': USER_AGENT,
-    }
-    url_tmpl = 'http://dart.fss.or.kr/dsac001/search.ax?selectDate={}&currentPage={}'
 
-    data_list = []
-    for page in range(1, 1000):
-        url = url_tmpl.format(date_str, page)
+    columns = ['rcept_dt', 'corp_cls', 'corp_code', 'corp_name', 'rcept_no', 'report_nm', 'flr_nm', 'rm']
+   
+    df_list = []
+    for page in range(1, 100):
+        time.sleep(0.1)
+
+        url = f'http://dart.fss.or.kr/dsac001/search.ax?selectDate={date_str}&pageGrouping=A&currentPage={page}'
+        headers = {'User-Agent': USER_AGENT}
         xhtml_text = _requests_get_cache(url, headers=headers) if cache else requests.get(url, headers).text
+
         if '검색된 자료가 없습니다' in xhtml_text:
+            if page == 1:
+                return pd.DataFrame(columns=columns)
             break
 
-        soup = BeautifulSoup(xhtml_text, features="lxml")
-        if not soup.table:
-            break
+        data_list = []
+        soup = BeautifulSoup(xhtml_text, 'lxml')
         trs = soup.table.find_all('tr')
         for tr in trs[1:]:
             tds = tr.find_all('td')
-            시간 = tds[0].text.strip()
-            시장 = tds[1].img['title'].replace('시장', '') if tds[1].img else ''
-            종목코드 = tds[1].a['href'].split('=')[1]
-            종목명 = tds[1].a.text.strip()
-            접수번호 = tds[2].a['href'].split('=')[1]
-            보고서명 = ' '.join(tds[2].a.text.split())
-            제출인 = tds[3].text
-            접수일자 = tds[4].text.replace('.', '-')
-            비고 = ' '.join([img['title'] for img in tds[5].find_all('img')])
+
+            hhmm = tds[0].text.strip()
+            corp_class = tds[1].img['title'].replace('시장', '') if tds[1].img else ''
+            code = tds[1].a['href'].split('=')[1]
+            name = tds[1].a.text.strip()
+            rcp_no = tds[2].a['href'].split('=')[1]
+            title = ' '.join(tds[2].a.text.split())
+            fr_name = tds[3].text
+            rcp_date = tds[4].text.replace('.', '-')
+            remark = ' '.join([img['title'] for img in tds[5].find_all('img')])
+
             rm_str_list = [ # 비고에서 삭제할 문자열
                 '본 공시사항은', 
                 '소관임', 
@@ -128,118 +94,123 @@ def list_date_ex(date=None, cache=True):
                 '가 있으니 관련 보고서를 참조하시기 바람',
                 '본 보고서는',
                 '을 포함한 것임',
-           ]
-            비고 = re.sub('|'.join(rm_str_list), '', 비고)
-            비고 = ' '.join(비고.split())
-            날짜 = date.strftime('%Y-%m-%d') + ' ' + 시간
-            data_list.append([날짜, 시장, 종목코드, 종목명, 접수번호, 보고서명, 제출인, 비고])
 
-    columns = ['rcept_dt', 'corp_cls', 'corp_code', 'corp_name', 'rcept_no', 'report_nm', 'flr_nm', 'rm']
-    df = pd.DataFrame(data_list, columns=columns)
-    df['rcept_dt'] = pd.to_datetime(df['rcept_dt'])
-    df.set_index('rcept_dt', inplace=True)
-    df.sort_index(inplace=True)
-    return df
+            ]
+            remark = re.sub('|'.join(rm_str_list), '', remark)
+            remark = ' '.join(remark.split())
+            dt = date.strftime('%Y-%m-%d') + ' ' + hhmm
+            data_list.append([dt, corp_class, code, name, rcp_no, title, fr_name, remark])
 
-def sub_docs(s, match=None): # rcp_no or URL
-    url = s if s.startswith('http') else "http://dart.fss.or.kr/dsaf001/main.do?rcpNo={}".format(s)
+        df = pd.DataFrame(data_list, columns=columns)
+        df['rcept_dt'] = pd.to_datetime(df['rcept_dt'])
+        df_list.append(df)
+    return pd.concat(df_list)
 
-    # 접수번호(rcp_no)에 해당하는 모든 하위 보고서 URL을 추출하여 리스트로 반환
+
+def attach_file_list(rcp_no): # rcp_no or URL
+    '''
+    접수번호(rcp_no)에 속한 첨부파일 목록정보를 데이터프레임으로 반환합니다.
+    * rcp_no: 접수번호를 지정합니다. rcp_no 대신 첨부문서의 URL(http로 시작)을 사용할 수 도 있습니다.
+    '''
+    if rcp_no.startswith('http'):
+        download_url = rcp_no
+    else:
+        url = f"http://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcp_no}"
+        r = requests.get(url, headers={'User-Agent': USER_AGENT})
+
+        dcm_no = None
+        matches = re.findall(f"viewDoc\('{rcp_no}', '(.*)', null, null, null, 'dart3.xsd'\)", r.text)
+        if matches:
+            dcm_no = matches[0]
+
+        if not dcm_no:
+            raise Exception(f'{url} 다운로드 페이지를 포함하고 있지 않습니다')
+
+        download_url = f'http://dart.fss.or.kr/pdf/download/main.do?rcp_no={rcp_no}&dcm_no={dcm_no}'
+
+    r = requests.get(download_url, headers={'User-Agent': USER_AGENT})
+    soup = BeautifulSoup(r.text, 'lxml')
+    table = soup.find('table')
+    trs = table.find_all('tr')
+
+    row_list = []
+    for tr in trs[1:]:
+        tds = tr.find_all('td')
+        fname = tds[0].text
+        flink = 'http://dart.fss.or.kr' + tds[1].a['href']
+        matches = re.findall('/pdf/download/(.*).do', flink)
+        ftype = matches[0] if matches else None
+        row_list.append([fname, flink, ftype])
+
+    return pd.DataFrame(row_list, columns=['file_name', 'url', 'type'])
+
+
+def attach_doc_list(rcp_no, match=None):
+    '''
+    첨부문서의 목록정보(title, url)을 데이터프레임으로 반환합니다. match를 지정하면 지정한 문자열과 가장 유사한 순서로 소트하여 데이터프레임을 반환 합니다.
+    * rcp_no: 접수번호
+    * match: 문서 제목과 가장 유사한 순서로 소트
+    '''
+    r = requests.get(f'http://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcp_no}', headers={'User-Agent': USER_AGENT})
+    soup = BeautifulSoup(r.text, 'lxml')
+
+    row_list = []
+    att = soup.find(id='att')
+    if not att:
+        raise Exception(f'rcp_no={rcp_no} 첨부문서를 포함하고 있지 않습니다')
+
+    for opt in att.find_all('option'):
+        if opt['value'] == 'null':
+            continue
+        title = ' '.join(opt.text.split())
+        url = f'http://dart.fss.or.kr/dsaf001/main.do?{opt["value"]}'
+        row_list.append([title, url])
+        
+    df = pd.DataFrame(row_list, columns=['title', 'url'])
+    if match:
+        df['similarity'] = df.title.apply(lambda x: difflib.SequenceMatcher(None, x, match).ratio())
+        df = df.sort_values('similarity', ascending=False)
+    return df[['title', 'url']].copy()
+
+
+def sub_docs(rcp_no, match=None):
+    '''
+    지정한 URL문서에 속해있는 하위 문서 목록정보(title, url)을 데이터프레임으로 반환합니다
+    * rcp_no: 접수번호를 지정합니다. rcp_no 대신 첨부문서의 URL(http로 시작)을 사용할 수 도 있습니다.
+    * match: 매칭할 문자열 (문자열을 지정하면 문서 제목과 가장 유사한 순서로 소트 합니다)
+    '''
+    if rcp_no.isdecimal():
+        r = requests.get(f'http://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcp_no}', headers={'User-Agent': USER_AGENT})
+    elif rcp_no.startswith('http'):
+        r = requests.get(rcp_no, headers={'User-Agent': USER_AGENT})
+    else:
+        raise ValueError('invalid `rcp_no`(or url)')
+
+    ## 하위 문서 URL 추출
+    matches = re.findall("viewDoc\('(\d+)', '(\d+)', '(\d+)', '(\d+)', '(\d+)', '(\S+)'\)\;", r.text)
+    if not matches:
+        raise Exception(f'{url} 하위 페이지를 포함하고 있지 않습니다')
+
     doc_urls = []
-    headers = {
-        'Referer':'https://dart.fss.or.kr/dsap001/guide.do', 
-        'User-Agent': USER_AGENT }
-
-    r = requests.get(url, headers=headers)
-
-    multi_page_re = "{viewDoc\('(\d+)', '(\d+)', '(\d+)', '(\d+)', '(\d+)', '(\S+)'\)\;"
-    single_page_re = "\t\tviewDoc\('(\d+)', '(\d+)', '(\d+)', '(\d+)', '(\d+)', '(\S+)'\)\;"
-    matches = re.findall(multi_page_re, r.text)
-    if len(matches) == 0: 
-        matches = re.findall(single_page_re, r.text)
-
-    doc_url_tmpl = "http://dart.fss.or.kr/report/viewer.do?rcpNo=%s&dcmNo=%s&eleId=%s&offset=%s&length=%s&dtd=%s" 
     for m in matches:
-        url = doc_url_tmpl % m
+        params = f'rcpNo={m[0]}&dcmNo={m[1]}&eleId={m[2]}&offset={m[3]}&length={m[4]}&dtd={m[5]}'
+        url = f'http://dart.fss.or.kr/report/viewer.do?{params}'
         doc_urls.append(url)
 
-    # 접수번호(rcp_no)에 해당하는 모든 하위 보고서의 제목 리스트 반환
+    ## 하위 문서 제목 추출
     matches = re.findall('text: \"(.*)\",', r.text)
-    
     doc_titles = matches[1:] # '전체' 제외
     if len(doc_titles) == 0: # 1페이지 경우 (본문의 첫 라인)
-        t = BeautifulSoup(r.text, features = "lxml").title
-        title = t.text.strip() if t else '' 
+        title = bs4.BeautifulSoup(r.text, 'lxml').title.text.strip()
+        title = ' '.join(title.split())
         doc_titles = [title]
-    doc_list = list(zip(doc_titles, doc_urls))
-    
+
+    df = pd.DataFrame(zip(doc_titles, doc_urls), columns=['title', 'url'])
     if match:
-        doc_list = sorted(doc_list, key=lambda x: difflib.SequenceMatcher(None, x[0].replace(' ', ''), match).ratio(), reverse=True)
-    return doc_list
+        df['similarity'] = df.title.apply(lambda x: difflib.SequenceMatcher(None, x, match).ratio())
+        df = df.sort_values('similarity', ascending=False)
+    return df[['title', 'url']].copy()
 
-def attach_docs(s, match=None): # rcp_no or URL
-    url = s if s.startswith('http') else "http://dart.fss.or.kr/dsaf001/main.do?rcpNo={}".format(s)
-    headers = {
-        'Referer':'https://dart.fss.or.kr/dsap001/guide.do', 
-        'User-Agent': USER_AGENT }
-    r = requests.get(url, headers=headers)
-    soup = BeautifulSoup(r.text, features = "lxml")
-    options = soup.select('#att > option')
-
-    doc_list = []
-    for opt in options:
-        if 'rcpNo=' in opt['value']:
-            url = 'http://dart.fss.or.kr/dsaf001/main.do?' + opt['value']
-            doc_list.extend(sub_docs(url))
-
-    if match:
-        doc_list = sorted(doc_list, key=lambda x: difflib.SequenceMatcher(None, x[0].replace(' ', ''), match).ratio(), reverse=True)
-    return doc_list
-
-
-def attach_files(s): # rcp_no or URL
-    if s.startswith('http'):
-        parts = urlparse(s)
-        rcp_no = parse_qs(parts.query)['rcpNo'][0]
-        url = s
-    else: # s == rcp_no
-        rcp_no = s
-        url = "http://dart.fss.or.kr/dsaf001/main.do?rcpNo=%s" % (rcp_no)
-    
-    headers = {
-        'Referer':'https://dart.fss.or.kr/dsap001/guide.do', 
-        'User-Agent': USER_AGENT }
-    r = requests.get(url, headers=headers)
-
-    start_str = "javascript: viewDoc\('" + rcp_no + "', '"
-    end_str = "', null, null, null,"
-    reg = re.compile(start_str + '(.*)' + end_str)
-    m = reg.findall(r.text)
-    if not m:
-        return None
-    dcm_no = m[0]
-
-    down_url_tmpl = 'http://dart.fss.or.kr/pdf/download/main.do?rcp_no={}&dcm_no={}'
-    down_url = down_url_tmpl.format(rcp_no, dcm_no)
-    r = requests.get(down_url, headers=headers)
-    soup = BeautifulSoup(r.text, features = "lxml")
-
-    a_list = soup.find_all('a')
-    attach_urls = []
-    find_list = [
-        ('download/excel', 'XLS', 'excel'),
-        ('download/pdf', 'PDF', 'pdf'),
-        ('download/ifrs', 'ZIP', 'ifrs'),
-    ]
-    attach_list = []
-    url_tmpl = "http://dart.fss.or.kr/pdf/download/{}.do?rcp_no={}&dcm_no={}&lang=ko"
-    for a in a_list:
-        for find in find_list:
-            if find[0] in a['href']:
-                row  = (find[1], url_tmpl.format(find[2], rcp_no, dcm_no))
-                attach_list.append(row)
-    
-    return attach_list
 
 def retrieve(url, fn=None):
     fn = fn if fn else url.split('/')[-1]

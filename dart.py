@@ -3,9 +3,12 @@
 
 import requests
 import zipfile
+import os
 import io
+import glob
 import json
 import pandas as pd
+import warnings
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from . import dart_search
@@ -22,8 +25,25 @@ except ImportError:
 class OpenDartReader():
     # init corp_codes (회사 고유번호 데이터)
     def __init__(self, api_key):
-        self.corp_codes = dart_search.corp_codes(api_key)
+        # create cache directory if not exists
+        docs_cache_dir = 'docs_cache'
+        if not os.path.exists(docs_cache_dir):
+            os.makedirs(docs_cache_dir)
+
+        # read and return document if exists
+        fn = 'opendartreader_corp_codes_{}.pkl'.format(datetime.today().strftime('%Y%m%d'))
+        fn_cache = os.path.join(docs_cache_dir, fn)
+        for fn_rm in glob.glob(os.path.join(docs_cache_dir, 'opendartreader_corp_codes_*')):
+            if fn_rm == fn_cache:
+                continue
+            os.remove(fn_rm)
+        if not os.path.exists(fn_cache):
+            df = dart_search.corp_codes(api_key)
+            df.to_pickle(fn_cache)
+
+        self.corp_codes = pd.read_pickle(fn_cache)
         self.api_key = api_key
+        
         
     # 1-1. 공시정보 - 공시검색(목록)
     def list(self, corp=None, start=None, end=None, kind='', kind_detail='', final=True):
@@ -34,12 +54,12 @@ class OpenDartReader():
         * end: 조회 종료일 (기본값: 당일)
         * kind: 보고서 종류:  A=정기공시, B=주요사항보고, C=발행공시, D=지분공시, E=기타공시, 
                                         F=외부감사관련, G=펀드공시, H=자산유동화, I=거래소공시, J=공정위공시
-        * final: 최종보고서 여부 (기본값: False)
+        * final: 최종보고서 여부 (기본값: True)
         '''
         if corp: # issues/6
             corp_code = self.find_corp_code(corp)
             if not corp_code:
-                raise ValueError('could not find "{}"'.format(corp))
+                raise ValueError('could not find "{}"'.format(code))
         else:
             corp_code = ''
         return dart_search.list(self.api_key, corp_code, start, end, kind, kind_detail, final)
@@ -91,10 +111,7 @@ class OpenDartReader():
     # 3-4. 단일회사 전체 재무제표
     def finstate_all(self, corp, bsns_year, reprt_code='11011', fs_div='CFS'):
         corp_code = self.find_corp_code(corp)
-        df = dart_finstate.finstate_all(self.api_key, corp_code, bsns_year, reprt_code=reprt_code, fs_div=fs_div)
-        if len(df):
-            return df
-        return dart_finstate.finstate_all(self.api_key, corp_code, bsns_year, reprt_code=reprt_code, fs_div='OFS')
+        return dart_finstate.finstate_all(self.api_key, corp_code, bsns_year, reprt_code=reprt_code, fs_div=fs_div)
         
     # 3-5. XBRL 표준계정과목체계(계정과목)
     def xbrl_taxonomy(self, sj_div):
@@ -110,25 +127,25 @@ class OpenDartReader():
         corp_code = self.find_corp_code(corp)
         return dart_share.major_shareholders_exec(self.api_key, corp_code)
 
-    # utils: list_date 특정 날짜의 공시보고서 전체
+    # utils: list_date 특정 날짜의 공시보고서 전체 (deprecated)
     def list_date(self, date=None, final=True, cache=True):
-        return _utils.list_date(date, final, cache=cache)
+        warnings.warn('list_date() is deprecated. list_date_ex()를 사용하세요')
         
-    # utils: list_date 특정 날짜의 공시보고서 전체 (시간포함)
+    # utils: list_date_ex 특정 날짜의 공시보고서 전체 데이터프레임 (시간포함)
     def list_date_ex(self, date=None, cache=True):
         return _utils.list_date_ex(date, cache=cache)
+    
+    # utils: attach files file list: 첨부파일 목록정보를 데이터프레임
+    def attach_file_list(self, s):
+        return _utils.attach_file_list(s)
 
-    # utils: subdocument list: 하위문서 제목과 URL (tuple list)
+    # utils: attach document list: 첨부문서의 목록정보(제목, URL)을 데이터프레임
+    def attach_doc_list(self, s, match=None):
+        return _utils.attach_doc_list(s, match=match)
+
+    # utils: subdocument list: 하위 문서 목록정보(제목, URL)을 데이터프레임
     def sub_docs(self, s, match=None):
         return _utils.sub_docs(s, match=match)
-
-    # utils: sub document list: 첨부 문서 제목과 URL (tuple list)
-    def attach_docs(self, s, match=None):
-        return _utils.attach_docs(s, match=match)
-    
-    # utils: attach files url list: 첨부파일 URLs (str list)
-    def attach_files(self, s):
-        return _utils.attach_files(s)
     
     # utils: url 을 fn 으로 저장
     def retrieve(self, url, fn):
