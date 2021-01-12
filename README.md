@@ -37,11 +37,36 @@ dart = OpenDartReader(api_key)
 
 
 # == 1. 공시정보 검색 ==
-# 삼성전자의 정기보고서('A') 2019년
-dart.list('005930', kind='A', start='2019-01-01', end='2019-12-31')
+# 삼성전자 2019-07-01 하루 동안 공시 목록 (날짜에 다양한 포맷이 가능합니다)
+dart.list('005930', end='2019-7-1')
 
-# 삼성전자의 모든 공시 리스트 (1999년 ~ 현재)
-dart.list('005930') 
+# 삼성전자 상장이후 모든 공시 목록 (5,142 건+)
+dart.list('005930', start='1900') 
+
+# 삼성전자 2010-01-01 ~ 2019-12-31 모든 공시 목록 (2,676 건)
+dart.list('005930', start='2010-01-01', end='2019-12-31') 
+
+# 삼성전자 1999-01-01 이후 모든 정기보고서
+dart.list('005930', start='1999-01-01', kind='A', final=False)
+
+# 삼성전자 1999년~2019년 모든 정기보고서(최종보고서)
+dart.list('005930', start='1999-01-01', end='2019-12-31', kind='A') 
+
+
+# 2020-07-01 하루동안 모든 공시목록
+dart.list(end='20200701')
+
+# 2020-01-01 ~ 2020-01-10 모든 회사의 모든 공시목록 (4,209 건)
+dart.list(start='2020-01-01', end='2020-01-10')
+
+# 2020-01-01 ~ 2020-01-10 모든 회사의 모든 공시목록 (정정된 공시포함) (4,876 건)
+dart.list(start='2020-01-01', end='2020-01-10', final=False)
+
+# 2020-07-01 부터 현재까지 모든 회사의 정기보고서
+dart.list(start='2020-07-01', kind='A')
+
+# 2019-01-01 ~ 2019-03-31 모든 회사의 정기보고서 (961건)
+dart.list(start='20190101', end='20190331', kind='A')
 
 # 기업의 개황정보
 dart.company('005930')
@@ -62,6 +87,9 @@ dart.report('046890', '최대주주', 2018)
 
 # 서울반도체(046890), 임원 관한 사항, 2018년
 dart.report('046890', '임원', 2018) 
+
+# 삼성바이오로직스(207940), 2019년, 소액주주에 관한 사항
+dart.report('207940', '소액주주', '2019')
 
 
 # ==== 3. 상장기업 재무정보 ====
@@ -95,9 +123,6 @@ dart.major_shareholders_exec('005930')
 
 
 # ==== 5. 확장 기능 ====
-# 지정한 날짜의 공시목록 전체
-dart.list_date('2020-01-03')
-
 # 지정한 날짜의 공시목록 전체 (시간 정보 포함)
 dart.list_date_ex('2020-01-03')
 
@@ -117,6 +142,8 @@ dart.attach_docs(rcp_no, match='감사보고서')
 # 첨부 파일 제목과 URL
 dart.attach_files(rcp_no)
 ```
+
+
 ## more information
 * [Users Guide (사용자 안내서)](https://nbviewer.jupyter.org/github/FinanceData/OpenDartReader/blob/master/docs/OpenDartReader_users_guide.ipynb) 
 * [Reference Manual (레퍼런스 메뉴얼)](https://nbviewer.jupyter.org/github/FinanceData/OpenDartReader/blob/master/docs/OpenDartReader_reference_manual.ipynb) 
