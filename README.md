@@ -134,13 +134,13 @@ dart.sub_docs(rcp_no)
 dart.sub_docs('20190401004781', match='사업의 내용')
 
 # 첨부 문서 제목과 URL
-dart.attach_docs(rcp_no)
+dart.attach_doc_list(rcp_no)
 
 # 제목이 잘 매치되는 순서로 소트
-dart.attach_docs(rcp_no, match='감사보고서')
+dart.attach_doc_list(rcp_no, match='감사보고서')
 
 # 첨부 파일 제목과 URL
-dart.attach_files(rcp_no)
+dart.attach_file_list(rcp_no)
 ```
 
 
