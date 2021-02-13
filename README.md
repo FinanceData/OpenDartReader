@@ -149,7 +149,8 @@ dart.attach_file_list(rcp_no)
 * [Reference Manual (레퍼런스 메뉴얼)](https://nbviewer.jupyter.org/github/FinanceData/OpenDartReader/blob/master/docs/OpenDartReader_reference_manual.ipynb) 
 
 ## tutorials
-* [OpenDartReader - 비상장 기업 데이터 조회와 활용](https://nbviewer.jupyter.org/12440c298682c44758e4789909a3f333) 
+* [OpenDartReader - 비상장 기업 데이터 조회와 활용 (재무데이터)](https://nbviewer.jupyter.org/12440c298682c44758e4789909a3f333) 
+* [OpenDartReader - 현대차 기아차 계속 보유해야 할까 (지분공시)](https://nbviewer.jupyter.org/90f5d24c26648438c792eb9fdb3f6980) 
 
 
 #### 2021 [FinanceData.KR](http://financedata.kr) | [facebook.com/financedata](http://facebook.com/financedata)
