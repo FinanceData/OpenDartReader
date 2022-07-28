@@ -201,7 +201,7 @@ def sub_docs(rcp_no, match=None):
     matches = re.findall('text: \"(.*)\",', r.text)
     doc_titles = matches[1:] # '전체' 제외
     if len(doc_titles) == 0: # 1페이지 경우 (본문의 첫 라인)
-        title = bs4.BeautifulSoup(r.text, 'lxml').title.text.strip()
+        title = BeautifulSoup(r.text, 'lxml').title.text.strip()
         title = ' '.join(title.split())
         doc_titles = [title]
 

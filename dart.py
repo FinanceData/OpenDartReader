@@ -59,7 +59,7 @@ class OpenDartReader():
         if corp: # issues/6
             corp_code = self.find_corp_code(corp)
             if not corp_code:
-                raise ValueError('could not find "{}"'.format(code))
+                raise ValueError('could not find "{}"'.format(corp_code))
         else:
             corp_code = ''
         return dart_search.list(self.api_key, corp_code, start, end, kind, kind_detail, final)
