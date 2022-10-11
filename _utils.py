@@ -17,7 +17,7 @@ try:
     from pandas import json_normalize
 except ImportError:
     from pandas.io.json import json_normalize
-    
+
 USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36'
 
 def _validate_dates(start, end):
@@ -34,7 +34,7 @@ def _requests_get_cache(url, headers=None):
     docs_cache_dir = 'docs_cache'
     if not os.path.exists(docs_cache_dir):
         os.makedirs(docs_cache_dir)
-    
+
     fn = os.path.join(docs_cache_dir, quote_plus(url))
     if not os.path.isfile(fn) or os.path.getsize(fn) == 0:
         with open(fn, 'wt') as f:
@@ -47,17 +47,17 @@ def _requests_get_cache(url, headers=None):
             return xhtml_text
     return xhtml_text
 
-      
+
 def list_date_ex(date=None, cache=True):
     '''
     지정한 날짜의 보고서의 목록 전체를 데이터프레임으로 반환 합니다(시간 포함)
     * date: 조회일 (기본값: 당일)
     '''
-    date = pd.to_datetime(date) if date else datetime.today() 
+    date = pd.to_datetime(date) if date else datetime.today()
     date_str = date.strftime('%Y.%m.%d')
 
     columns = ['rcept_dt', 'corp_cls', 'corp_code', 'corp_name', 'rcept_no', 'report_nm', 'flr_nm', 'rm']
-   
+
     df_list = []
     for page in range(1, 100):
         time.sleep(0.1)
@@ -88,8 +88,8 @@ def list_date_ex(date=None, cache=True):
             remark = ' '.join([img['title'] for img in tds[5].find_all('img')])
 
             rm_str_list = [ # 비고에서 삭제할 문자열
-                '본 공시사항은', 
-                '소관임', 
+                '본 공시사항은',
+                '소관임',
                 '본 보고서 제출 후',
                 '가 있으니 관련 보고서를 참조하시기 바람',
                 '본 보고서는',
@@ -165,7 +165,7 @@ def attach_doc_list(rcp_no, match=None):
         title = ' '.join(opt.text.split())
         url = f'http://dart.fss.or.kr/dsaf001/main.do?{opt["value"]}'
         row_list.append([title, url])
-        
+
     df = pd.DataFrame(row_list, columns=['title', 'url'])
     if match:
         df['similarity'] = df.title.apply(lambda x: difflib.SequenceMatcher(None, x, match).ratio())
@@ -180,7 +180,8 @@ def sub_docs(rcp_no, match=None):
     * match: 매칭할 문자열 (문자열을 지정하면 문서 제목과 가장 유사한 순서로 소트 합니다)
     '''
     if rcp_no.isdecimal():
-        r = requests.get(f'http://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcp_no}', headers={'User-Agent': USER_AGENT})
+        url = f'http://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcp_no}'
+        r = requests.get(url, headers={'User-Agent': USER_AGENT})
     elif rcp_no.startswith('http'):
         r = requests.get(rcp_no, headers={'User-Agent': USER_AGENT})
     else:
