@@ -56,7 +56,6 @@ def list_date_ex(date=None, cache=True):
     df_list = []
     for page in range(1, 100):
         time.sleep(0.1)
-
         url = f'http://dart.fss.or.kr/dsac001/search.ax?selectDate={date_str}&pageGrouping=A&currentPage={page}'
         headers = {'User-Agent': USER_AGENT}
         xhtml_text = _requests_get_cache(url, headers=headers) if cache else requests.get(url, headers).text
@@ -68,37 +67,27 @@ def list_date_ex(date=None, cache=True):
 
         data_list = []
         soup = BeautifulSoup(xhtml_text, features="lxml")
-        trs = soup.table.find_all('tr')
-        for tr in trs[1:]:
+        trs = soup.table.tbody.find_all('tr')
+        for tr in trs:
             tds = tr.find_all('td')
-
             hhmm = tds[0].text.strip()
-            corp_class = tds[1].img['title'].replace('시장', '') if tds[1].img else ''
-            name = tds[1].a.text.strip()
+            corp_class = tds[1].span.span.text
+            name = tds[1].span.a.text.strip()
             rcp_no = tds[2].a['href'].split('=')[1]
             title = ' '.join(tds[2].a.text.split())
             fr_name = tds[3].text
             rcp_date = tds[4].text.replace('.', '-')
-            remark = ' '.join([img['title'] for img in tds[5].find_all('img')])
-
-            rm_str_list = [ # 비고에서 삭제할 문자열
-                '본 공시사항은', 
-                '소관임', 
-                '본 보고서 제출 후',
-                '가 있으니 관련 보고서를 참조하시기 바람',
-                '본 보고서는',
-                '을 포함한 것임',
-
-            ]
-            remark = re.sub('|'.join(rm_str_list), '', remark)
-            remark = ' '.join(remark.split())
+            remark = ''.join([span.text for span in tds[5].find_all('span')])
             dt = date.strftime('%Y-%m-%d') + ' ' + hhmm
             data_list.append([dt, corp_class, name, rcp_no, title, fr_name, remark])
 
         df = pd.DataFrame(data_list, columns=columns)
         df['rcept_dt'] = pd.to_datetime(df['rcept_dt'])
         df_list.append(df)
-    return pd.concat(df_list)
+    merged = pd.concat(df_list)
+    merged = merged.reset_index(drop=True)
+    return merged
+
 
 def sub_docs(rcp_no, match=None):
     '''
