@@ -4,15 +4,8 @@
 import io
 import zipfile
 import requests
-import json
 import xml.etree.ElementTree as ET
 import pandas as pd
-
-try:
-    from pandas import json_normalize
-except ImportError:
-    from pandas.io.json import json_normalize
-
 
 # 3-1 상장기업 재무정보 (단일회사): api/fnlttSinglAcnt.json
 # 3-2 상장기업 재무정보 (다중회사): api/fnlttMultiAcnt.json
@@ -28,10 +21,11 @@ def finstate(api_key, corp_code, bsns_year, reprt_code='11011'):
     }
 
     r = requests.get(url, params=params)
-    jo = json.loads(r.text)
+    jo = r.json() 
     if 'list' not in jo:
-        return None
-    return json_normalize(jo, 'list')
+        print(jo)
+        return pd.DataFrame()
+    return pd.DataFrame(jo['list'])
 
 # 3-3 재무제표 원본파일(XBRL): api/fnlttXbrl.xml
 def finstate_xml(api_key, rcp_no, save_as='finstate_xml.zip', reprt_code='11011'):
@@ -67,10 +61,11 @@ def finstate_all(api_key, corp_code, bsns_year, reprt_code='11011', fs_div='CFS'
     }
 
     r = requests.get(url, params=params)
-    jo = json.loads(r.text)
+    jo = r.json() 
     if 'list' not in jo:
-        return None
-    return json_normalize(jo, 'list')
+        print(jo)
+        return pd.DataFrame()
+    return pd.DataFrame(jo['list'])
 
 # 3-5 XBRL 표준계정과목체계(계정과목): api/xbrlTaxonomy.json
 def xbrl_taxonomy(api_key, sj_div='BS1'):
@@ -80,7 +75,8 @@ def xbrl_taxonomy(api_key, sj_div='BS1'):
         'sj_div': sj_div, # "CFS":연결재무제표, "OFS":재무제표
     }
     r = requests.get(url, params=params)
-    jo = json.loads(r.text)
+    jo = r.json() 
     if 'list' not in jo:
-        return None
-    return json_normalize(jo, 'list')
+        print(jo)
+        return pd.DataFrame()
+    return pd.DataFrame(jo['list'])

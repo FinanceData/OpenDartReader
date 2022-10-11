@@ -5,27 +5,21 @@ import requests
 import zipfile
 import io
 import os
-import json
 import pandas as pd
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 
-try:
-    from pandas import json_normalize
-except ImportError:
-    from pandas.io.json import json_normalize
-
 # 1. 공시정보 - 공시검색(목록)
 def list(api_key, corp_code='', start=None, end=None, kind='', kind_detail='', final=False):
-    start = pd.to_datetime(start).strftime('%Y%m%d') if start else ''
-    end = pd.to_datetime(end).strftime('%Y%m%d') if end else datetime.today().strftime('%Y%m%d')
+    start = pd.to_datetime(start) if start else pd.to_datetime('1900-01-01')
+    end = pd.to_datetime(end) if end else datetime.today()
     
     url = 'https://opendart.fss.or.kr/api/list.json'
     params = {
         'crtfc_key': api_key,
         'corp_code': corp_code,
-        'bgn_de': start,
-        'end_de': end,
+        'bgn_de': start.strftime('%Y%m%d'),
+        'end_de': end.strftime('%Y%m%d'),
         'last_reprt_at': 'Y' if final else 'N', # 최종보고서 여부
         'page_no': 1,
         'page_count': 100,
@@ -43,21 +37,21 @@ def list(api_key, corp_code='', start=None, end=None, kind='', kind_detail='', f
         if status != '000':
             raise ValueError({'status': status, 'message': message})
     except ET.ParseError as e:
-        jo = json.loads(r.text)
+        jo = r.json()
         if jo['status'] != '000':
             print(ValueError(r.text))
 
-    jo = json.loads(r.text)
+    jo = r.json()
     if 'list' not in jo:
         return pd.DataFrame()
-    df = json_normalize(jo, 'list')
+    df = pd.DataFrame(jo['list'])
 
     # paging
     for page in range(2, jo['total_page']+1):
         params['page_no'] = page
         r = requests.get(url, params=params)
-        jo = json.loads(r.text)
-        df = df.append(json_normalize(jo, 'list'))
+        jo = r.json()
+        df = pd.concat([df, pd.DataFrame(jo['list'])])
     return df
 
 
@@ -77,7 +71,7 @@ def company(api_key, corp_code):
             raise ValueError({'status': status, 'message': message})
     except ET.ParseError as e:
         pass
-    return json.loads(r.text)
+    return r.json()
 
 # 1-2. 공시정보 - 기업개황: 지정된 이름(name)을 포함하는 회사들의 corp_code 리스트를 반환
 def company_by_name(api_key, corp_code_list):
@@ -90,7 +84,7 @@ def company_by_name(api_key, corp_code_list):
     for corp_code in corp_code_list:
         params['corp_code'] = corp_code
         r = requests.get(url, params=params)
-        company_list.append(json.loads(r.text))
+        company_list.append(r.json())
     return company_list
 
 # 1-3. 공시정보 - 공시서류원본파일

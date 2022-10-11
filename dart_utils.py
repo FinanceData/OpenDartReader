@@ -1,5 +1,5 @@
 #-*- coding:utf-8 -*-
-# 2020 FinanceData.KR http://financedata.kr fb.com/financedata
+# 2020-2022 FinanceData.KR http://financedata.kr fb.com/financedata
 
 import os
 import re
@@ -13,12 +13,7 @@ import pandas as pd
 import json
 import difflib
 
-try:
-    from pandas import json_normalize
-except ImportError:
-    from pandas.io.json import json_normalize
-
-USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36'
+USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.3904.108 Safari/537.36'
 
 def _validate_dates(start, end):
     start = to_datetime(start)
@@ -34,7 +29,7 @@ def _requests_get_cache(url, headers=None):
     docs_cache_dir = 'docs_cache'
     if not os.path.exists(docs_cache_dir):
         os.makedirs(docs_cache_dir)
-
+    
     fn = os.path.join(docs_cache_dir, quote_plus(url))
     if not os.path.isfile(fn) or os.path.getsize(fn) == 0:
         with open(fn, 'wt') as f:
@@ -47,17 +42,17 @@ def _requests_get_cache(url, headers=None):
             return xhtml_text
     return xhtml_text
 
-
+      
 def list_date_ex(date=None, cache=True):
     '''
     지정한 날짜의 보고서의 목록 전체를 데이터프레임으로 반환 합니다(시간 포함)
     * date: 조회일 (기본값: 당일)
     '''
-    date = pd.to_datetime(date) if date else datetime.today()
+    date = pd.to_datetime(date) if date else datetime.today() 
     date_str = date.strftime('%Y.%m.%d')
 
-    columns = ['rcept_dt', 'corp_cls', 'corp_code', 'corp_name', 'rcept_no', 'report_nm', 'flr_nm', 'rm']
-
+    columns = ['rcept_dt', 'corp_cls', 'corp_name', 'rcept_no', 'report_nm', 'flr_nm', 'rm']
+   
     df_list = []
     for page in range(1, 100):
         time.sleep(0.1)
@@ -72,14 +67,13 @@ def list_date_ex(date=None, cache=True):
             break
 
         data_list = []
-        soup = BeautifulSoup(xhtml_text, 'lxml')
+        soup = BeautifulSoup(xhtml_text, features="lxml")
         trs = soup.table.find_all('tr')
         for tr in trs[1:]:
             tds = tr.find_all('td')
 
             hhmm = tds[0].text.strip()
             corp_class = tds[1].img['title'].replace('시장', '') if tds[1].img else ''
-            code = tds[1].a['href'].split('=')[1]
             name = tds[1].a.text.strip()
             rcp_no = tds[2].a['href'].split('=')[1]
             title = ' '.join(tds[2].a.text.split())
@@ -88,8 +82,8 @@ def list_date_ex(date=None, cache=True):
             remark = ' '.join([img['title'] for img in tds[5].find_all('img')])
 
             rm_str_list = [ # 비고에서 삭제할 문자열
-                '본 공시사항은',
-                '소관임',
+                '본 공시사항은', 
+                '소관임', 
                 '본 보고서 제출 후',
                 '가 있으니 관련 보고서를 참조하시기 바람',
                 '본 보고서는',
@@ -99,50 +93,54 @@ def list_date_ex(date=None, cache=True):
             remark = re.sub('|'.join(rm_str_list), '', remark)
             remark = ' '.join(remark.split())
             dt = date.strftime('%Y-%m-%d') + ' ' + hhmm
-            data_list.append([dt, corp_class, code, name, rcp_no, title, fr_name, remark])
+            data_list.append([dt, corp_class, name, rcp_no, title, fr_name, remark])
 
         df = pd.DataFrame(data_list, columns=columns)
         df['rcept_dt'] = pd.to_datetime(df['rcept_dt'])
         df_list.append(df)
     return pd.concat(df_list)
 
-
-def attach_file_list(rcp_no): # rcp_no or URL
+def sub_docs(rcp_no, match=None):
     '''
-    접수번호(rcp_no)에 속한 첨부파일 목록정보를 데이터프레임으로 반환합니다.
+    지정한 URL문서에 속해있는 하위 문서 목록정보(title, url)을 데이터프레임으로 반환합니다
     * rcp_no: 접수번호를 지정합니다. rcp_no 대신 첨부문서의 URL(http로 시작)을 사용할 수 도 있습니다.
+    * match: 매칭할 문자열 (문자열을 지정하면 문서 제목과 가장 유사한 순서로 소트 합니다)
     '''
-    if rcp_no.startswith('http'):
-        download_url = rcp_no
+    if rcp_no.isdecimal():
+        r = requests.get(f'http://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcp_no}', headers={'User-Agent': USER_AGENT})
+    elif rcp_no.startswith('http'):
+        r = requests.get(rcp_no, headers={'User-Agent': USER_AGENT})
     else:
-        url = f"http://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcp_no}"
-        r = requests.get(url, headers={'User-Agent': USER_AGENT})
-
-        dcm_no = None
-        matches = re.findall(f"viewDoc\('{rcp_no}', '(.*)', null, null, null, 'dart3.xsd'\)", r.text)
-        if matches:
-            dcm_no = matches[0]
-
-        if not dcm_no:
-            raise Exception(f'{url} 다운로드 페이지를 포함하고 있지 않습니다')
-
-        download_url = f'http://dart.fss.or.kr/pdf/download/main.do?rcp_no={rcp_no}&dcm_no={dcm_no}'
-
-    r = requests.get(download_url, headers={'User-Agent': USER_AGENT})
-    soup = BeautifulSoup(r.text, 'lxml')
-    table = soup.find('table')
-    trs = table.find_all('tr')
+        raise ValueError('invalid `rcp_no`(or url)')
+        
+    ## 하위 문서 URL 추출
+    matches = re.findall(
+              "\s+node[12]\['text'\][ =]+\"(.*?)\"\;" 
+           + "\s+node[12]\['id'\][ =]+\"(\d+)\";"
+           + "\s+node[12]\['rcpNo'\][ =]+\"(\d+)\";"
+           + "\s+node[12]\['dcmNo'\][ =]+\"(\d+)\";"
+           + "\s+node[12]\['eleId'\][ =]+\"(\d+)\";"
+           + "\s+node[12]\['offset'\][ =]+\"(\d+)\";"
+           + "\s+node[12]\['length'\][ =]+\"(\d+)\";"
+           + "\s+node[12]\['dtd'\][ =]+\"(.*?)\";"
+           + "\s+node[12]\['tocNo'\][ =]+\"(\d+)\";"
+           , r.text)
+    
+    if not matches:
+        raise Exception(f'{url} 하위 페이지를 포함하고 있지 않습니다')
 
     row_list = []
-    for tr in trs[1:]:
-        tds = tr.find_all('td')
-        fname = tds[0].text
-        flink = 'http://dart.fss.or.kr' + tds[1].a['href']
-        matches = re.findall('/pdf/download/(.*).do', flink)
-        ftype = matches[0] if matches else None
-        row_list.append([fname, flink, ftype])
-
-    return pd.DataFrame(row_list, columns=['file_name', 'url', 'type'])
+    for m in matches:
+        doc_id = m[1]
+        doc_title = m[0]
+        params = f'rcpNo={m[2]}&dcmNo={m[3]}&eleId={m[4]}&offset={m[5]}&length={m[6]}&dtd={m[7]}'
+        doc_url = f'http://dart.fss.or.kr/report/viewer.do?{params}'
+        row_list.append([doc_title, doc_url])
+    df = pd.DataFrame(row_list, columns=['title', 'url'])
+    if match:
+        df['similarity'] = df['title'].apply(lambda x: difflib.SequenceMatcher(None, x, match).ratio())
+        df = df.sort_values('similarity', ascending=False)
+    return df[['title', 'url']]
 
 
 def attach_doc_list(rcp_no, match=None):
@@ -152,7 +150,7 @@ def attach_doc_list(rcp_no, match=None):
     * match: 문서 제목과 가장 유사한 순서로 소트
     '''
     r = requests.get(f'http://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcp_no}', headers={'User-Agent': USER_AGENT})
-    soup = BeautifulSoup(r.text, 'lxml')
+    soup = BeautifulSoup(r.text, features="lxml")
 
     row_list = []
     att = soup.find(id='att')
@@ -165,7 +163,7 @@ def attach_doc_list(rcp_no, match=None):
         title = ' '.join(opt.text.split())
         url = f'http://dart.fss.or.kr/dsaf001/main.do?{opt["value"]}'
         row_list.append([title, url])
-
+        
     df = pd.DataFrame(row_list, columns=['title', 'url'])
     if match:
         df['similarity'] = df.title.apply(lambda x: difflib.SequenceMatcher(None, x, match).ratio())
@@ -173,47 +171,42 @@ def attach_doc_list(rcp_no, match=None):
     return df[['title', 'url']].copy()
 
 
-def sub_docs(rcp_no, match=None):
+def attach_files(arg): # rcp_no or URL
     '''
-    지정한 URL문서에 속해있는 하위 문서 목록정보(title, url)을 데이터프레임으로 반환합니다
+    접수번호(rcp_no)에 속한 첨부파일 목록정보를 dict 형식으로 반환합니다.
     * rcp_no: 접수번호를 지정합니다. rcp_no 대신 첨부문서의 URL(http로 시작)을 사용할 수 도 있습니다.
-    * match: 매칭할 문자열 (문자열을 지정하면 문서 제목과 가장 유사한 순서로 소트 합니다)
     '''
-    if rcp_no.isdecimal():
-        url = f'http://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcp_no}'
-        r = requests.get(url, headers={'User-Agent': USER_AGENT})
-    elif rcp_no.startswith('http'):
-        r = requests.get(rcp_no, headers={'User-Agent': USER_AGENT})
-    else:
-        raise ValueError('invalid `rcp_no`(or url)')
+    url= arg if arg.startswith('http') else f"http://dart.fss.or.kr/dsaf001/main.do?rcpNo={arg}"
+    r = requests.get(url, headers={'User-Agent': USER_AGENT})
 
-    ## 하위 문서 URL 추출
-    matches = re.findall("viewDoc\('(\d+)', '(\d+)', '(\d+)', '(\d+)', '(\d+)', '(\S+)'\)\;", r.text)
-    if not matches:
-        raise Exception(f'{url} 하위 페이지를 포함하고 있지 않습니다')
+    rcp_no = dcm_no = None
+    matches = re.findall(
+        "\s+node[12]\['rcpNo'\][ =]+\"(\d+)\";"
+     + "\s+node[12]\['dcmNo'\][ =]+\"(\d+)\";", r.text)
+    if matches:
+        rcp_no = matches[0][0]
+        dcm_no = matches[0][1]
 
-    doc_urls = []
-    for m in matches:
-        params = f'rcpNo={m[0]}&dcmNo={m[1]}&eleId={m[2]}&offset={m[3]}&length={m[4]}&dtd={m[5]}'
-        url = f'http://dart.fss.or.kr/report/viewer.do?{params}'
-        doc_urls.append(url)
+    if not dcm_no:
+        print(f'{url} does not have download page. 다운로드 페이지를 포함하고 있지 않습니다.')
 
-    ## 하위 문서 제목 추출
-    matches = re.findall('text: \"(.*)\",', r.text)
-    doc_titles = matches[1:] # '전체' 제외
-    if len(doc_titles) == 0: # 1페이지 경우 (본문의 첫 라인)
-        title = bs4.BeautifulSoup(r.text, 'lxml').title.text.strip()
-        title = ' '.join(title.split())
-        doc_titles = [title]
+    download_url = f'http://dart.fss.or.kr/pdf/download/main.do?rcp_no={rcp_no}&dcm_no={dcm_no}'
+    r = requests.get(download_url, headers={'User-Agent': USER_AGENT})
+    soup = BeautifulSoup(r.text, features="lxml")
+    table = soup.find('table')
+    if not table:
+        return dict()
 
-    df = pd.DataFrame(zip(doc_titles, doc_urls), columns=['title', 'url'])
-    if match:
-        df['similarity'] = df.title.apply(lambda x: difflib.SequenceMatcher(None, x, match).ratio())
-        df = df.sort_values('similarity', ascending=False)
-    return df[['title', 'url']].copy()
+    attach_files_dict = {}
+    for tr in table.tbody.find_all('tr'):
+        tds = tr.find_all('td')
+        fname = tds[0].text
+        flink = 'http://dart.fss.or.kr' + tds[1].a['href']
+        attach_files_dict[fname] = flink
+    return attach_files_dict
 
 
-def retrieve(url, fn=None):
+def download(url, fn=None):
     fn = fn if fn else url.split('/')[-1]
     r = requests.get(url, stream=True, headers={'User-Agent': USER_AGENT})
     if r.status_code != 200:
