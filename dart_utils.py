@@ -103,36 +103,47 @@ def sub_docs(rcp_no, match=None):
         raise ValueError('invalid `rcp_no`(or url)')
         
     ## 하위 문서 URL 추출
-    matches = re.findall(
-              "\s+node[12]\['text'\][ =]+\"(.*?)\"\;" 
-           + "\s+node[12]\['id'\][ =]+\"(\d+)\";"
-           + "\s+node[12]\['rcpNo'\][ =]+\"(\d+)\";"
-           + "\s+node[12]\['dcmNo'\][ =]+\"(\d+)\";"
-           + "\s+node[12]\['eleId'\][ =]+\"(\d+)\";"
-           + "\s+node[12]\['offset'\][ =]+\"(\d+)\";"
-           + "\s+node[12]\['length'\][ =]+\"(\d+)\";"
-           + "\s+node[12]\['dtd'\][ =]+\"(.*?)\";"
-           + "\s+node[12]\['tocNo'\][ =]+\"(\d+)\";"
-           , r.text)
-    
-    if not matches:
-        raise Exception(f'{url} 하위 페이지를 포함하고 있지 않습니다')
+    multi_page_re = (
+        "\s+node[12]\['text'\][ =]+\"(.*?)\"\;" 
+        "\s+node[12]\['id'\][ =]+\"(\d+)\";"
+        "\s+node[12]\['rcpNo'\][ =]+\"(\d+)\";"
+        "\s+node[12]\['dcmNo'\][ =]+\"(\d+)\";"
+        "\s+node[12]\['eleId'\][ =]+\"(\d+)\";"
+        "\s+node[12]\['offset'\][ =]+\"(\d+)\";"
+        "\s+node[12]\['length'\][ =]+\"(\d+)\";"
+        "\s+node[12]\['dtd'\][ =]+\"(.*?)\";"
+        "\s+node[12]\['tocNo'\][ =]+\"(\d+)\";"
+    )
+    matches = re.findall(multi_page_re, r.text)
+    if len(matches) > 0:
+        row_list = []
+        for m in matches:
+            doc_id = m[1]
+            doc_title = m[0]
+            params = f'rcpNo={m[2]}&dcmNo={m[3]}&eleId={m[4]}&offset={m[5]}&length={m[6]}&dtd={m[7]}'
+            doc_url = f'http://dart.fss.or.kr/report/viewer.do?{params}'
+            row_list.append([doc_title, doc_url])
+        df = pd.DataFrame(row_list, columns=['title', 'url'])
+        if match:
+            df['similarity'] = df['title'].apply(lambda x: difflib.SequenceMatcher(None, x, match).ratio())
+            df = df.sort_values('similarity', ascending=False)
+        return df[['title', 'url']]
+    else:
+        single_page_re = "\t\tviewDoc\('(\d+)', '(\d+)', '(\d+)', '(\d+)', '(\d+)', '(\S+)',''\)\;"
+        matches = re.findall(single_page_re, r.text)
+        if len(matches) > 0:
+            doc_title = BeautifulSoup(r.text, features="lxml").title.text.strip()
+            m = matches[0]
+            params = f'rcpNo={m[0]}&dcmNo={m[1]}&eleId={m[2]}&offset={m[3]}&length={m[4]}&dtd={m[5]}'
+            doc_url = f'http://dart.fss.or.kr/report/viewer.do?{params}'
+            return pd.DataFrame([[doc_title, doc_url]], columns=['title', 'url'])
+        else:
+            raise Exception(f'{url} 하위 페이지를 포함하고 있지 않습니다')
+        
+    return pd.DataFrame(None, columns=['title', 'url'])
+       
 
-    row_list = []
-    for m in matches:
-        doc_id = m[1]
-        doc_title = m[0]
-        params = f'rcpNo={m[2]}&dcmNo={m[3]}&eleId={m[4]}&offset={m[5]}&length={m[6]}&dtd={m[7]}'
-        doc_url = f'http://dart.fss.or.kr/report/viewer.do?{params}'
-        row_list.append([doc_title, doc_url])
-    df = pd.DataFrame(row_list, columns=['title', 'url'])
-    if match:
-        df['similarity'] = df['title'].apply(lambda x: difflib.SequenceMatcher(None, x, match).ratio())
-        df = df.sort_values('similarity', ascending=False)
-    return df[['title', 'url']]
-
-
-def attach_doc_list(rcp_no, match=None):
+def attach_docs(rcp_no, match=None):
     '''
     첨부문서의 목록정보(title, url)을 데이터프레임으로 반환합니다. match를 지정하면 지정한 문자열과 가장 유사한 순서로 소트하여 데이터프레임을 반환 합니다.
     * rcp_no: 접수번호

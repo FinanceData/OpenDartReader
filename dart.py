@@ -110,9 +110,18 @@ class OpenDartReader():
 
     # 3-4. 단일회사 전체 재무제표
     def finstate_all(self, corp, bsns_year, reprt_code='11011', fs_div='CFS'):
+        reprt_code_dict = {'11013':'1분기보고서', '11012':'반기보고서', '11014':'3분기보고서', '11011':'사업보고서'}
+        fs_div_dict = {'CFS':'연결제무제표', 'OFS':'별도(개별)제무제표'}
+        
+        if reprt_code not in reprt_code_dict:
+            raise ValueError(f'invalid reprt_code (use one of {reprt_code_dict}')
+        if fs_div not in fs_div_dict:
+            raise ValueError(f'invalid fs_div (use one of {fs_div_dict}')
+        
         corp_code = self.find_corp_code(corp)
         if not corp_code:
             raise ValueError(f'could not find "{corp}"')
+        print(f"reprt_code='{reprt_code}', fs_div='{fs_div}' ({reprt_code_dict[reprt_code]}, {fs_div_dict[fs_div]})'")
         return dart_finstate.finstate_all(self.api_key, corp_code, bsns_year, reprt_code=reprt_code, fs_div=fs_div)
         
     # 3-5. XBRL 표준계정과목체계(계정과목)
@@ -158,8 +167,13 @@ class OpenDartReader():
         return dart_utils.list_date_ex(date, cache=cache)
     
     # utils: attach document list: 첨부문서의 목록정보(제목, URL)을 데이터프레임
+    def attach_docs(self, s, match=None):
+        return dart_utils.attach_docs(s, match=match)
+
+    # utils: attach document list: 첨부문서의 목록정보(제목, URL)을 데이터프레임
     def attach_doc_list(self, s, match=None):
-        return dart_utils.attach_doc_list(s, match=match)
+        print('attach_doc_list() will deprecated. use attach_files() instead')
+        return dart_utils.attach_docs(s, match=match)
 
     # utils: subdocument list: 하위 문서 목록정보(제목, URL)을 데이터프레임
     def sub_docs(self, s, match=None):

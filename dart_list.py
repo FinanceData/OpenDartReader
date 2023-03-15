@@ -1,5 +1,5 @@
 #-*- coding:utf-8 -*-
-# 2020 FinanceData.KR http://financedata.kr fb.com/financedata
+# 2020-2023 FinanceData.KR http://financedata.kr fb.com/financedata
 
 import requests
 import zipfile
@@ -52,6 +52,7 @@ def list(api_key, corp_code='', start=None, end=None, kind='', kind_detail='', f
         r = requests.get(url, params=params)
         jo = r.json()
         df = pd.concat([df, pd.DataFrame(jo['list'])])
+        df = df.reset_index(drop=True)
     return df
 
 
@@ -87,18 +88,8 @@ def company_by_name(api_key, corp_code_list):
         company_list.append(r.json())
     return company_list
 
-# 1-3. 공시정보 - 공시서류원본파일
+# 1-3. 공시정보 - (사업보고서) 공시서류원본파일 
 def document(api_key, rcp_no, cache=True):
-    # create cache directory if not exists
-    docs_cache_dir = 'docs_cache'
-    if not os.path.exists(docs_cache_dir):
-        os.makedirs(docs_cache_dir)
-
-    # read and return document if exists
-    fn = os.path.join(docs_cache_dir, 'dart-{}.xhml'.format(rcp_no))
-    if os.path.isfile(fn) and os.path.getsize(fn) > 0:
-        with open(fn, 'rt') as f:
-            return f.read() 
 
     url = 'https://opendart.fss.or.kr/api/document.xml'
     params = {
@@ -108,16 +99,18 @@ def document(api_key, rcp_no, cache=True):
 
     r = requests.get(url, params=params)
     try:
-        tree = ET.XML(r.content)
+        tree = ET.XML(r.text)
         status = tree.find('status').text
         message = tree.find('message').text
         if status != '000':
             raise ValueError({'status': status, 'message': message})
     except ET.ParseError as e:
         pass
+
     zf = zipfile.ZipFile(io.BytesIO(r.content))
     info_list = zf.infolist()
-    xml_data = zf.read(info_list[0].filename)
+    fnames = sorted([info.filename for info in info_list])
+    xml_data = zf.read(fnames[0])
 
     try:
         xml_text = xml_data.decode('euc-kr')
@@ -126,11 +119,42 @@ def document(api_key, rcp_no, cache=True):
     except UnicodeDecodeError as e:
         xml_text = xml_data
 
-    # save document to cache 
-    with open(fn, 'wt') as f:
-        f.write(xml_text)
     return xml_text
 
+# 1-3. 공시정보 - (사업보고서, 감사보고서) 공시서류원본문서파일 
+def document_all(api_key, rcp_no, cache=True):
+
+    url = 'https://opendart.fss.or.kr/api/document.xml'
+    params = {
+        'crtfc_key': api_key,
+        'rcept_no': rcp_no,
+    }
+
+    r = requests.get(url, params=params)
+    try:
+        tree = ET.XML(r.text)
+        status = tree.find('status').text
+        message = tree.find('message').text
+        if status != '000':
+            raise ValueError({'status': status, 'message': message})
+    except ET.ParseError as e:
+        pass
+
+    zf = zipfile.ZipFile(io.BytesIO(r.content))
+    info_list = zf.infolist()
+    fnames = sorted([info.filename for info in info_list])
+    xml_text_list = []
+    for fname in fnames:
+        xml_data = zf.read(fname)
+        try:
+            xml_text = xml_data.decode('euc-kr')
+        except UnicodeDecodeError as e:
+            xml_text = xml_data.decode('utf-8')
+        except UnicodeDecodeError as e:
+            xml_text = xml_data
+        xml_text_list.append(xml_text)
+
+    return xml_text_list
 
 # 1-4 고유번호: api/corpCode.xml
 def corp_codes(api_key):

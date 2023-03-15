@@ -1,5 +1,5 @@
 #-*- coding:utf-8 -*-
-# 2022 FinanceData.KR http://financedata.kr fb.com/financedata
+# 2020-2023 FinanceData.KR http://financedata.kr fb.com/financedata
 
 import requests
 import pandas as pd

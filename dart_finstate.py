@@ -24,6 +24,7 @@ def finstate(api_key, corp_code, bsns_year, reprt_code='11011'):
     jo = r.json() 
     if 'list' not in jo:
         print(jo)
+        print('전자공시의 재무데이터는 2015년 이후 데이터를 제공합니다') if bsns_year < 2015 else print()
         return pd.DataFrame()
     return pd.DataFrame(jo['list'])
 
@@ -57,13 +58,14 @@ def finstate_all(api_key, corp_code, bsns_year, reprt_code='11011', fs_div='CFS'
         'corp_code': corp_code,
         'bsns_year':  bsns_year,   # 사업년도
         'reprt_code': reprt_code, # "11011": 사업보고서
-        'fs_div': fs_div, # "CFS":연결재무제표, "OFS":재무제표
+        'fs_div': fs_div, # 'CFS'=연결제무제표, 'OFS'=별도(개별)제무제표
     }
 
     r = requests.get(url, params=params)
     jo = r.json() 
     if 'list' not in jo:
         print(jo)
+        print('전자공시의 재무데이터는 2015년 이후 데이터를 제공합니다') if bsns_year < 2015 else print()
         return pd.DataFrame()
     return pd.DataFrame(jo['list'])
 
