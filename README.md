@@ -180,6 +180,12 @@ dart.attach_files(rcp_no)
 url = 'http://dart.fss.or.kr/pdf/download/excel.do?rcp_no=20220308000798&dcm_no=8446647&lang=ko'
 fn = '[삼성전자]사업보고서_재무제표(2022.03.08)_ko.xls'
 dart.download(url, fn)
+
+# 첨부파일 모두 다운로드
+for k in dart.attach_files('20221111000817'):
+    url, fn = atts[k], k
+    print(url, fn)
+    dart.download(url, fn)
 ```
 
 
