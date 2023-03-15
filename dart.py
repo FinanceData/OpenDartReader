@@ -1,5 +1,6 @@
+# dart.py
 #-*- coding:utf-8 -*-
-# 2020 FinanceData.KR http://financedata.kr fb.com/financedata
+# 2020~2023 FinanceData.KR http://financedata.kr fb.com/financedata
 
 import requests
 import zipfile
@@ -72,9 +73,13 @@ class OpenDartReader():
         corp_code_list = list(df['corp_code'])
         return dart_list.company_by_name(self.api_key, corp_code_list)
     
-    # 1-3. 공시정보 - 공시서류원본파일
+    # 1-3. 공시정보 - 공시서류원본문서 (사업보고서)
     def document(self, rcp_no, cache=True):
         return dart_list.document(self.api_key, rcp_no, cache=cache)
+
+    # 1-3. 공시정보 - 공시서류원본문서 전체 (사업보고서, 감사보고서)
+    def document_all(self, rcp_no, cache=True):
+        return dart_list.document_all(self.api_key, rcp_no, cache=cache)
 
     # 1-4. 공시정보 - 고유번호: corp(종목코드 혹은 회사이름) to 고유번호(corp_code)
     def find_corp_code(self, corp):
