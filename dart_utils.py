@@ -104,15 +104,15 @@ def sub_docs(rcp_no, match=None):
         
     ## 하위 문서 URL 추출
     multi_page_re = (
-        "\s+node[12]\['text'\][ =]+\"(.*?)\"\;" 
-        "\s+node[12]\['id'\][ =]+\"(\d+)\";"
-        "\s+node[12]\['rcpNo'\][ =]+\"(\d+)\";"
-        "\s+node[12]\['dcmNo'\][ =]+\"(\d+)\";"
-        "\s+node[12]\['eleId'\][ =]+\"(\d+)\";"
-        "\s+node[12]\['offset'\][ =]+\"(\d+)\";"
-        "\s+node[12]\['length'\][ =]+\"(\d+)\";"
-        "\s+node[12]\['dtd'\][ =]+\"(.*?)\";"
-        "\s+node[12]\['tocNo'\][ =]+\"(\d+)\";"
+        r"\s+node[12]\['text'\][ =]+\"(.*?)\"\;" 
+        r"\s+node[12]\['id'\][ =]+\"(\d+)\";"
+        r"\s+node[12]\['rcpNo'\][ =]+\"(\d+)\";"
+        r"\s+node[12]\['dcmNo'\][ =]+\"(\d+)\";"
+        r"\s+node[12]\['eleId'\][ =]+\"(\d+)\";"
+        r"\s+node[12]\['offset'\][ =]+\"(\d+)\";"
+        r"\s+node[12]\['length'\][ =]+\"(\d+)\";"
+        r"\s+node[12]\['dtd'\][ =]+\"(.*?)\";"
+        r"\s+node[12]\['tocNo'\][ =]+\"(\d+)\";"
     )
     matches = re.findall(multi_page_re, r.text)
     if len(matches) > 0:
@@ -129,7 +129,7 @@ def sub_docs(rcp_no, match=None):
             df = df.sort_values('similarity', ascending=False)
         return df[['title', 'url']]
     else:
-        single_page_re = "\t\tviewDoc\('(\d+)', '(\d+)', '(\d+)', '(\d+)', '(\d+)', '(\S+)',''\)\;"
+        single_page_re = r"\t\tviewDoc\('(\d+)', '(\d+)', '(\d+)', '(\d+)', '(\d+)', '(\S+)',''\)\;"
         matches = re.findall(single_page_re, r.text)
         if len(matches) > 0:
             doc_title = BeautifulSoup(r.text, features="lxml").title.text.strip()
@@ -181,8 +181,8 @@ def attach_files(arg): # rcp_no or URL
 
     rcp_no = dcm_no = None
     matches = re.findall(
-        "\s+node[12]\['rcpNo'\][ =]+\"(\d+)\";"
-     + "\s+node[12]\['dcmNo'\][ =]+\"(\d+)\";", r.text)
+        r"\s+node[12]\['rcpNo'\][ =]+\"(\d+)\";"
+     + r"\s+node[12]\['dcmNo'\][ =]+\"(\d+)\";", r.text)
     if matches:
         rcp_no = matches[0][0]
         dcm_no = matches[0][1]
