@@ -1,6 +1,6 @@
 [project]
 name = "opendartreader"
-version = "0.2.5"
+version = "0.3.0"
 description = "OpenDART 공시정보를 쉽게 조회할 수 있는 파이썬 라이브러리"
 readme = "README.md"
 requires-python = ">=3.13"
