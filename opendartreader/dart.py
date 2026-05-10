@@ -22,7 +22,11 @@ from . import dart_utils
 
 class OpenDartReader():
     # init corp_codes (회사 고유번호 데이터)
-    def __init__(self, api_key):
+    def __init__(self, api_key=None):
+        if api_key is None:
+            api_key = os.environ.get('DART_API_KEY')
+        if not api_key:
+            raise ValueError('api_key is required. Pass it as an argument or set DART_API_KEY environment variable.')
         # create cache directory if not exists
         docs_cache_dir = 'docs_cache'
         if not os.path.exists(docs_cache_dir):
@@ -83,6 +87,7 @@ class OpenDartReader():
 
     # 1-4. 공시정보 - 고유번호: corp(종목코드 혹은 회사이름) to 고유번호(corp_code)
     def find_corp_code(self, corp):
+        corp = str(corp)
         if not corp.isdigit():
             df = self.corp_codes[self.corp_codes['corp_name'] == corp]
         elif corp.isdigit() and len(corp) == 6:
@@ -200,3 +205,6 @@ class OpenDartReader():
     def retrieve(self, url, fn):
         print('retrieve() will deprecated. use download() instead')
         return dart_utils.download(url, fn)
+
+    def list_presenter(self, presenter, start=None, end=None, report_type='지분공시', final=True):
+        return dart_utils.list_presenter(presenter, start, end, report_type, final)

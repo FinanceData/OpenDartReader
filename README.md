@@ -24,18 +24,89 @@ pip install opendartreader
 이미 설치되어 있고 업그레이드가 필요하다면 다음과 같이 설치합니다.
 ```bash
 pip install --upgrade opendartreader 
+
 ```
 
-## Quick Start
+## Quick Start (CLI 사용자와 AI를 위한)
+
+```bash
+# API 키 설정 (환경변수)
+export DART_API_KEY="your_api_key_here"
+
+# 기업 개황
+
+# 공시 검색 (삼성전자, 2024년 이후 전체) - 기본 JSON 출력
+dart list "삼성전자" --start "2026-01-01"
+
+# 공시 검색 (삼성전자, 2025년 전체) - 사람이 보기 좋은 형식
+dart list "삼성전자" --start "2025-01-01" --end "2025-12-31" --pretty
+
+# 2026-05-04 하루 동안 모든 기업의 공시 목록
+dart list --start "2026-5-4" --end "2026-5-4" --pretty
+
+# 2026년 1분기 정기 공시 목록 (최종 보고서만)
+dart list --start "2026-01-01" --end "2026-03-31" --kind "A" --pretty
+
+# 기업 개황 조회 (기본 JSON 출력)
+dart company "삼성전자"
+
+# 기업명 검색으로 개황 조회 (다수의 회사가 검색 됩니다)
+dart company-by-name "삼성전자"
+
+# 재무제표 조회 (JSON 출력)
+dart finstate "삼성전자" 2023
+
+# 재무제표 조회 (여러 기업)
+dart finstate "005930, 000660, 005380" 2021
+dart finstate "삼성전자, SK하이닉스, 현대자동차" 2025
+
+# 재무제표 XBRL 원본 파일 저장
+dart finstate-xml 20220308000798
+
+# 주요 주주 조회
+dart shareholders "삼성전자"
+
+# 사업보고서 특정 항목 조회
+dart report "삼성전자" "배당" 2023
+
+# 공시 서류 원문 다운로드 (.html 저장)
+dart document 20220816001711
+
+# 공시 서류 원문 모두 다운로드 (다수의 .html 저장)
+dart document-all 20220816001711
+
+# 하위 문서 제목과 URL
+dart sub-docs 20220308000798
+dart sub-docs 20220308000798 --match=감사의견
+
+# 종목코드 혹은 기업명으로 고유번호 얻기
+dart find-corp-code 005930
+dart find-corp-code 삼성전자
+
+# 첨부 파일 모두 다운로드
+dart attach-files 20221111000817
+
+# 제출자명으로 목록 검색
+# type: "정기공시","주요사항보고", "발행공시", "지분공시", "기타공시", "외부감사관련", "펀드공시", "자산유동화", "거래소공시", "공정위공시"
+dart list-presenter 국민연금공단 --start 2026-01-01 --end 2026-04-30 --type 지분공시
+dart list-presenter 삼성전자 --start 2026-01-01 --type 주요사항보고
+```
+
+
+## Quick Start (API 개발자를 위한)
 
 ```python
 import OpenDartReader
 
 ### 0. 객체 생성 ###
 # 객체 생성 (API KEY 지정) 
-api_key = 'a81e18ac719d1e1e4ec2899ef25a737ab6cbb4c7'
+api_key = '여기에API키'
 
-dart = OpenDartReader(api_key) 
+dart = OpenDartReader(api_key) # 객체 생성 시 API Key 지정
+
+# 환경변수 DART_API_KEY에 API 키가 설정되어 있다면 환경변수에서 자동으로 설정됩니다.
+# (추천) .env 파일에 DART_API_KEY="여기에API키" 로 설정하는 것을 추천합니다. 
+dart = OpenDartReader()  # 환경변수 DART_API_KEY 설정 필요
 
 
 ### 1. 공시정보 ###
@@ -193,16 +264,12 @@ for k in dart.attach_files('20221111000817'):
     url, fn = atts[k], k
     print(url, fn)
     dart.download(url, fn)
+
+
+# 제출자명으로 검색
+dart.list_presenter('국민연금공단', start='2026-01-01', end='2026-05-01', report_type='지분공시')
 ```
 
 
-## more information
-* [Users Guide (사용자 안내서)](https://nbviewer.jupyter.org/github/FinanceData/OpenDartReader/blob/master/docs/OpenDartReader_users_guide.ipynb) 
-* [Reference Manual (레퍼런스 메뉴얼)](https://nbviewer.jupyter.org/github/FinanceData/OpenDartReader/blob/master/docs/OpenDartReader_reference_manual.ipynb) 
 
-## tutorials
-* [OpenDartReader - 비상장 기업 데이터 조회와 활용 (재무데이터)](https://nbviewer.jupyter.org/12440c298682c44758e4789909a3f333) 
-* [OpenDartReader - 현대차 기아차 계속 보유해야 할까 (지분공시)](https://nbviewer.jupyter.org/90f5d24c26648438c792eb9fdb3f6980) 
-
-
-**2021-2025 [FinanceData.KR]()**
+**2021-2026 [FinanceData.KR]()**

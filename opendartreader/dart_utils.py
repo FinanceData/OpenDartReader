@@ -12,6 +12,9 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import json
 import difflib
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.3904.108 Safari/537.36'
 
@@ -217,3 +220,135 @@ def download(url, fn=None):
         for chunk in r.iter_content(chunk_size=4096):
             f.write(chunk) if chunk else None
     return fn
+
+def list_presenter(presenter, start=None, end=None, report_type='지분공시', final=True):
+    '''
+    * presenter: 제출자
+    * report_type: 보고서 유형
+        * "정기공시","주요사항보고", "발행공시", "지분공시", "기타공시", "외부감사관련", 
+        * "펀드공시", "자산유동화", "거래소공시", "공정위공시"
+    * start: 시작일
+    * end: 종료일
+    * final: 최종 여부
+    '''
+
+    # 시작일, 종료일이 없으면 당일부터 이전 1년으로 설정
+    if start is None:
+        start = (datetime.today() - timedelta(days=365)).strftime('%Y%m%d')
+    if end is None:
+        end = datetime.today().strftime('%Y%m%d')
+
+    report_type_value = []
+    if report_type == '정기공시':
+        report_type_value = '&'.join(['A001', 'A002', 'A003'])
+    elif report_type == '주요사항보고':
+        report_type_value = '&'.join(['B001', 'B002', 'B003'])
+    elif report_type == '발행공시':
+        report_type_value = '&'.join(['C001', 'C002', 'C003', 'C004', 'C005', 'C006', 'C007', 'C008', 'C009', 'C010', 'C011'])
+    elif report_type == '지분공시':
+        report_type_value = '&'.join(['D001', 'D002', 'D003', 'D004', 'D005'])
+    elif report_type == '기타공시':
+        report_type_value = '&'.join(['E001', 'E002', 'E003', 'E004', 'E005', 'E006', 'E007', 'E008', 'E009'])
+    elif report_type == '외부감사관련':
+        report_type_value = '&'.join(['F001', 'F002', 'F003', 'F004'])
+    elif report_type == '펀드공시':
+        report_type_value = '&'.join(['G001', 'G002', 'G003'])
+    elif report_type == '자산유동화':
+        report_type_value = '&'.join(['H001', 'H002', 'H003', 'H004', 'H005', 'H006'])
+    elif report_type == '거래소공시':
+        report_type_value = '&'.join(['I001', 'I002', 'I003', 'I004', 'I005', 'I006'])
+    elif report_type == '공정위공시':
+        report_type_value = '&'.join(['J001', 'J002', 'J004', 'J005', 'J006'])
+
+    start = pd.to_datetime(start).strftime('%Y%m%d')
+    end = pd.to_datetime(end).strftime('%Y%m%d')
+    
+    url = 'https://dart.fss.or.kr/dsab007/detailSearch.ax'
+    columns = ['rcept_dt', 'corp_cls', 'corp_code', 'corp_name', 'rcept_no', 'report_nm', 'presenter', 'rm']
+    df_list = []
+    
+    headers = {'User-Agent': USER_AGENT}
+    
+    for page in range(1, 100):
+        time.sleep(0.1)
+        data = {
+            'currentPage': str(page),
+            'maxResults': '100',
+            'maxLinks': '10',
+            'sort': 'date',
+            'series': 'desc',
+            'reportNamePopYn': 'Y',
+            'businessCode': 'all',
+            'autoSearch': 'N',
+            'option': 'corp',
+            'textPresenterNm': presenter,
+            'startDate': start,
+            'endDate': end,
+            'finalReport': 'recent' if final else '',
+            'businessNm': '전체',
+            'corporationType': 'all',
+            'closingAccountsMonth': 'all',
+        }
+        
+        if report_type_value:
+            data['publicType'] = report_type_value.split('&') if isinstance(report_type_value, str) else report_type_value
+
+        r = requests.post(url, data=data, headers=headers, verify=False)
+        
+        if '검색된 자료가 없습니다' in r.text or '결과가 없습니다' in r.text:
+            if page == 1:
+                return pd.DataFrame(columns=columns)
+            break
+            
+        soup = BeautifulSoup(r.text, features="lxml")
+        tbody = soup.find('tbody')
+        if not tbody:
+            break
+            
+        trs = tbody.find_all('tr')
+        if not trs:
+            break
+            
+        data_list = []
+        for tr in trs:
+            tds = tr.find_all('td')
+            if len(tds) < 6:
+                continue
+                
+            corp_class_tag = tds[1].find('span', class_=re.compile(r'tagCom_'))
+            corp_class = corp_class_tag['title'].replace('시장', '') if corp_class_tag else ''
+            
+            a_tag = tds[1].find('a')
+            corp_code = ''
+            if a_tag and 'openCorpInfoNew' in a_tag.get('href', ''):
+                corp_code = a_tag['href'].split("'")[1]
+            corp_name = a_tag.text.strip() if a_tag else ''
+            
+            rcp_no_tag = tds[2].find('a')
+            rcp_no = rcp_no_tag['href'].split('=')[1] if rcp_no_tag and '=' in rcp_no_tag['href'] else ''
+            report_nm = rcp_no_tag.text.strip() if rcp_no_tag else ''
+            
+            pres = tds[3].text.strip()
+            rcept_dt = tds[4].text.strip().replace('.', '-')
+            remark = tds[5].text.strip()
+            
+            data_list.append([rcept_dt, corp_class, corp_code, corp_name, rcp_no, report_nm, pres, remark])
+            
+        df = pd.DataFrame(data_list, columns=columns)
+        df['rcept_dt'] = pd.to_datetime(df['rcept_dt'])
+        df_list.append(df)
+        
+        page_info = soup.find('div', class_='pageInfo')
+        if page_info:
+            m = re.search(r'\[(\d+)/(\d+)\]', page_info.text)
+            if m:
+                curr_page = int(m.group(1))
+                total_pages = int(m.group(2))
+                if curr_page >= total_pages:
+                    break
+        else:
+            break
+
+    if df_list:
+        return pd.concat(df_list).reset_index(drop=True)
+    return pd.DataFrame(columns=columns)
