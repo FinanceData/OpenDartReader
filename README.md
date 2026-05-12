@@ -24,10 +24,13 @@ pip install opendartreader
 이미 설치되어 있고 업그레이드가 필요하다면 다음과 같이 설치합니다.
 ```bash
 pip install --upgrade opendartreader 
-
 ```
 
 ## Quick Start (CLI 사용자와 AI를 위한)
+## uv tool 설치
+```bash
+uv tool install opendartreader
+```
 
 ```bash
 # API 키 설정 (환경변수)
