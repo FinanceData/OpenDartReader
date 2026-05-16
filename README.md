@@ -13,19 +13,7 @@
 또한, 부가로 유틸리티 기능으로 하위 문서, 첨부 문서, 첨부 파일, 첨부 파일 다운로드 등을 지원합니다. 예를 들어, 정기 보고서에 포함된 재무제표 엑셀 파일을 손쉽게 다운로드 할 수 있습니다.
 
 
-## Installation
-
-다음과 같이 설치 합니다.
-
-```bash
-pip install opendartreader
-```
-
-이미 설치되어 있고 업그레이드가 필요하다면 다음과 같이 설치합니다.
-
-```bash
-pip install --upgrade opendartreader
-```
+## Quick Start (CLI 사용자와 AI를 위한)
 
 CLI 도구는 `uv tool`로도 설치할 수 있습니다.
 
@@ -36,17 +24,17 @@ uv tool install opendartreader
 uv tool install --upgrade opendartreader
 ```
 
-## Quick Start (CLI 사용자와 AI를 위한)
+사용자의 홈 디렉토리 혹은 실행하는 프로젝트에 `.env` 파일을 생성하고
+```.env
+DART_API_KEY="your_api_key_here"
+```
 
+환경변수에 설정할 수 도 있습니다.
 ```bash
 # API 키 설정 (환경변수)
 export DART_API_KEY="your_api_key_here"
 ```
 
-사용자의 홈 디렉토리 혹은 실행하는 프로젝트에 `.env` 파일을 생성하고
-```.env
-DART_API_KEY="your_api_key_here"
-```
 
 ### 설치
 
