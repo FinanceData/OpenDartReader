@@ -13,18 +13,30 @@
 또한, 부가로 유틸리티 기능으로 하위 문서, 첨부 문서, 첨부 파일, 첨부 파일 다운로드 등을 지원합니다. 예를 들어, 정기 보고서에 포함된 재무제표 엑셀 파일을 손쉽게 다운로드 할 수 있습니다.
 
 
+## Installation
 
-## Quick Start (CLI 사용자와 AI를 위한)
-### 설치 및 ADART_API_KEY PI키 설정
+다음과 같이 설치 합니다.
+
 ```bash
-# 설치
+pip install opendartreader
+```
+
+이미 설치되어 있고 업그레이드가 필요하다면 다음과 같이 설치합니다.
+
+```bash
+pip install --upgrade opendartreader
+```
+
+CLI 도구는 `uv tool`로도 설치할 수 있습니다.
+
+```bash
 uv tool install opendartreader
 
 # 업그레이드
 uv tool install --upgrade opendartreader
 ```
 
-DART_API_KEY 키 설정
+## Quick Start (CLI 사용자와 AI를 위한)
 
 ```bash
 # API 키 설정 (환경변수)
