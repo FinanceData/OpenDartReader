@@ -5,6 +5,7 @@
 import requests
 import zipfile
 import os
+from dotenv import load_dotenv
 import io
 import glob
 import json
@@ -23,6 +24,7 @@ from . import dart_utils
 class OpenDartReader():
     # init corp_codes (회사 고유번호 데이터)
     def __init__(self, api_key=None):
+        load_dotenv()
         if api_key is None:
             api_key = os.environ.get('DART_API_KEY')
         if not api_key:
@@ -53,8 +55,8 @@ class OpenDartReader():
         '''
         DART 보고서의 목록을 DataFrame으로 반환
         * corp: 종목코드 (고유번호, 법인명도 가능)
-        * start: 조회 시작일 (기본값: 1990-01-01')
-        * end: 조회 종료일 (기본값: 당일)
+        * start: 조회 시작일 (start·end 둘 다 생략 시 종료일 기준 1년 전)
+        * end: 조회 종료일 (start·end 둘 다 생략 시 당일)
         * kind: 보고서 종류:  A=정기공시, B=주요사항보고, C=발행공시, D=지분공시, E=기타공시, 
                                         F=외부감사관련, G=펀드공시, H=자산유동화, I=거래소공시, J=공정위공시
         * final: 최종보고서 여부 (기본값: True)

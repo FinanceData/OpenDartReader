@@ -1,8 +1,15 @@
-import click
-import os
-import pandas as pd
 import json
+import os
+
+import click
+import pandas as pd
+from dotenv import load_dotenv
+
 from .dart import OpenDartReader
+
+load_dotenv()
+
+_HELP = dict(help_option_names=['-h', '--help'])
 
 
 def output_result(data, pretty=False):
@@ -42,7 +49,7 @@ def output_result(data, pretty=False):
         click.echo(data)
 
 
-@click.group()
+@click.group(context_settings=_HELP)
 @click.option('--api-key', envvar='DART_API_KEY', help='DART API Key')
 @click.pass_context
 def main(ctx, api_key):
@@ -54,24 +61,27 @@ def main(ctx, api_key):
         'dart': OpenDartReader(api_key)
     }
 
-@main.command()
+@main.command(context_settings=_HELP)
 @click.argument('corp', required=False)
-@click.option('--start', help='Start date (YYYY-MM-DD)')
-@click.option('--end', help='End date (YYYY-MM-DD)')
-@click.option('--kind', default='', help='Report kind (A, B, C, D, E, F, G, H, I, J)')
+@click.option('-s', '--start', help='Start date (YYYY-MM-DD)')
+@click.option('-e', '--end', help='End date (YYYY-MM-DD)')
+@click.option('-k', '--kind', default='', help='Report kind (A, B, C, D, E, F, G, H, I, J)')
 @click.option('--kind-detail', default='', help='Report kind detail')
 @click.option('--final/--no-final', default=True, help='Final report only (default True)')
-@click.option('--pretty', is_flag=True, help='Pretty print output (human readable)')
+@click.option('-p', '--pretty', is_flag=True, help='Pretty print output (human readable)')
 @click.pass_context
 def list(ctx, corp, start, end, kind, kind_detail, final, pretty):
-    """Search disclosure list for a corporation. If CORP is omitted, returns all."""
+    """Search disclosure list for a corporation. If CORP is omitted, returns all.
+
+    With neither --start nor --end, the query range is the past year through today.
+    """
     dart = ctx.obj['dart']
     df = dart.list(corp, start, end, kind, kind_detail, final)
     output_result(df, pretty)
 
-@main.command()
+@main.command(context_settings=_HELP)
 @click.argument('corp')
-@click.option('--pretty', is_flag=True, help='Pretty print output (human readable)')
+@click.option('-p', '--pretty', is_flag=True, help='Pretty print output (human readable)')
 @click.pass_context
 def company(ctx, corp, pretty):
     """Get company overview."""
@@ -79,9 +89,9 @@ def company(ctx, corp, pretty):
     info = dart.company(corp)
     output_result(info, pretty)
 
-@main.command('company-by-name')
+@main.command('company-by-name', context_settings=_HELP)
 @click.argument('name')
-@click.option('--pretty', is_flag=True, help='Pretty print output (human readable)')
+@click.option('-p', '--pretty', is_flag=True, help='Pretty print output (human readable)')
 @click.pass_context
 def company_by_name(ctx, name, pretty):
     """Search companies by name and get overview."""
@@ -89,11 +99,11 @@ def company_by_name(ctx, name, pretty):
     info = dart.company_by_name(name)
     output_result(info, pretty)
 
-@main.command()
+@main.command(context_settings=_HELP)
 @click.argument('corp')
 @click.argument('year')
 @click.option('--report', default='11011', help='Report code (11011: Business, 11012: Half, 11013: Q1, 11014: Q3)')
-@click.option('--pretty', is_flag=True, help='Pretty print output (human readable)')
+@click.option('-p', '--pretty', is_flag=True, help='Pretty print output (human readable)')
 @click.pass_context
 def finstate(ctx, corp, year, report, pretty):
     """Get financial statements."""
@@ -101,12 +111,12 @@ def finstate(ctx, corp, year, report, pretty):
     df = dart.finstate(corp, year, report)
     output_result(df, pretty)
 
-@main.command()
+@main.command(context_settings=_HELP)
 @click.argument('corp')
 @click.argument('keyword')
 @click.argument('year')
 @click.option('--report', default='11011', help='Report code (11011: Business, 11012: Half, 11013: Q1, 11014: Q3)')
-@click.option('--pretty', is_flag=True, help='Pretty print output (human readable)')
+@click.option('-p', '--pretty', is_flag=True, help='Pretty print output (human readable)')
 @click.pass_context
 def report(ctx, corp, keyword, year, report, pretty):
     """Get specific report item (e.g. '배당', '직원')."""
@@ -114,11 +124,11 @@ def report(ctx, corp, keyword, year, report, pretty):
     df = dart.report(corp, keyword, year, report)
     output_result(df, pretty)
 
-@main.command()
+@main.command(context_settings=_HELP)
 @click.argument('corp')
 @click.argument('keyword')
-@click.option('--start', help='Start date')
-@click.option('--pretty', is_flag=True, help='Pretty print output (human readable)')
+@click.option('-s', '--start', help='Start date')
+@click.option('-p', '--pretty', is_flag=True, help='Pretty print output (human readable)')
 @click.pass_context
 def event(ctx, corp, keyword, start, pretty):
     """Get major event info (e.g. '유상증자')."""
@@ -126,7 +136,7 @@ def event(ctx, corp, keyword, start, pretty):
     df = dart.event(corp, keyword, start)
     output_result(df, pretty)
 
-@main.command()
+@main.command(context_settings=_HELP)
 @click.argument('rcp_no')
 @click.pass_context
 def document(ctx, rcp_no):
@@ -138,7 +148,7 @@ def document(ctx, rcp_no):
         f.write(xml_text)
     click.echo(f"Saved: {filename}")
 
-@main.command('document-all')
+@main.command('document-all', context_settings=_HELP)
 @click.argument('rcp_no')
 @click.pass_context
 def document_all(ctx, rcp_no):
@@ -151,7 +161,7 @@ def document_all(ctx, rcp_no):
             f.write(xml_text)
         click.echo(f"Saved: {filename}")
 
-@main.command()
+@main.command(context_settings=_HELP)
 @click.argument('url')
 @click.argument('filename')
 @click.pass_context
@@ -161,9 +171,9 @@ def download(ctx, url, filename):
     fn = dart.download(url, filename)
     click.echo(f"Downloaded: {fn}")
 
-@main.command()
+@main.command(context_settings=_HELP)
 @click.argument('corp')
-@click.option('--pretty', is_flag=True, help='Pretty print output (human readable)')
+@click.option('-p', '--pretty', is_flag=True, help='Pretty print output (human readable)')
 @click.pass_context
 def shareholders(ctx, corp, pretty):
     """Get major shareholders."""
@@ -171,7 +181,7 @@ def shareholders(ctx, corp, pretty):
     df = dart.major_shareholders(corp)
     output_result(df, pretty)
 
-@main.command('find-corp-code')
+@main.command('find-corp-code', context_settings=_HELP)
 @click.argument('corp')
 @click.pass_context
 def find_corp_code(ctx, corp):
@@ -184,7 +194,7 @@ def find_corp_code(ctx, corp):
         click.echo(f"Error: Could not find corporation code for '{corp}'")
         ctx.exit(1)
 
-@main.command('finstate-xml')
+@main.command('finstate-xml', context_settings=_HELP)
 @click.argument('rcp_no')
 @click.pass_context
 def finstate_xml(ctx, rcp_no):
@@ -194,10 +204,10 @@ def finstate_xml(ctx, rcp_no):
     dart.finstate_xml(rcp_no, save_as=filename)
     click.echo(f"Saved: {filename}")
 
-@main.command('sub-docs')
+@main.command('sub-docs', context_settings=_HELP)
 @click.argument('rcp_no')
 @click.option('--match', help='Filter sub-documents by title')
-@click.option('--pretty', is_flag=True, help='Pretty print output (human readable)')
+@click.option('-p', '--pretty', is_flag=True, help='Pretty print output (human readable)')
 @click.pass_context
 def sub_docs(ctx, rcp_no, match, pretty):
     """Get sub-documents list (title and URL)."""
@@ -205,7 +215,7 @@ def sub_docs(ctx, rcp_no, match, pretty):
     df = dart.sub_docs(rcp_no, match=match)
     output_result(df, pretty)
 
-@main.command('attach-files')
+@main.command('attach-files', context_settings=_HELP)
 @click.argument('rcp_no')
 @click.pass_context
 def attach_files(ctx, rcp_no):
@@ -219,13 +229,13 @@ def attach_files(ctx, rcp_no):
         fn = dart.download(url, fname)
         click.echo(f"Downloaded: {fn}")
 
-@main.command('list-presenter')
+@main.command('list-presenter', context_settings=_HELP)
 @click.argument('presenter')
-@click.option('--start', help='Start date (YYYY-MM-DD)')
-@click.option('--end', help='End date (YYYY-MM-DD)')
+@click.option('-s', '--start', help='Start date (YYYY-MM-DD)')
+@click.option('-e', '--end', help='End date (YYYY-MM-DD)')
 @click.option('--type', 'report_type', default='지분공시', help='Report type')
 @click.option('--final/--no-final', default=True, help='Final report only')
-@click.option('--pretty', is_flag=True, help='Pretty print output (human readable)')
+@click.option('-p', '--pretty', is_flag=True, help='Pretty print output (human readable)')
 @click.pass_context
 def list_presenter(ctx, presenter, start, end, report_type, final, pretty):
     """Search disclosures by presenter name."""

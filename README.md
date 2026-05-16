@@ -13,27 +13,34 @@
 또한, 부가로 유틸리티 기능으로 하위 문서, 첨부 문서, 첨부 파일, 첨부 파일 다운로드 등을 지원합니다. 예를 들어, 정기 보고서에 포함된 재무제표 엑셀 파일을 손쉽게 다운로드 할 수 있습니다.
 
 
-## Installation
-
-다음과 같이 설치 합니다.
-
-```bash
-pip install opendartreader
-```
-
-이미 설치되어 있고 업그레이드가 필요하다면 다음과 같이 설치합니다.
-```bash
-pip install --upgrade opendartreader 
-
-```
 
 ## Quick Start (CLI 사용자와 AI를 위한)
+### 설치 및 ADART_API_KEY PI키 설정
+```bash
+# 설치
+uv tool install opendartreader
+
+# 업그레이드
+uv tool install --upgrade opendartreader
+```
+
+DART_API_KEY 키 설정
 
 ```bash
 # API 키 설정 (환경변수)
 export DART_API_KEY="your_api_key_here"
+```
 
-# 기업 개황
+사용자의 홈 디렉토리 혹은 실행하는 프로젝트에 `.env` 파일을 생성하고
+```.env
+DART_API_KEY="your_api_key_here"
+```
+
+### 설치
+
+```bash
+# 공시 검색 (삼성전자) 기간을 지정하지 않으면 지난 1년간 공시목록
+dart list "삼성전자"
 
 # 공시 검색 (삼성전자, 2024년 이후 전체) - 기본 JSON 출력
 dart list "삼성전자" --start "2026-01-01"
@@ -44,7 +51,7 @@ dart list "삼성전자" --start "2025-01-01" --end "2025-12-31" --pretty
 # 2026-05-04 하루 동안 모든 기업의 공시 목록
 dart list --start "2026-5-4" --end "2026-5-4" --pretty
 
-# 2026년 1분기 정기 공시 목록 (최종 보고서만)
+# 2026년 1분기 정기 공시 목록
 dart list --start "2026-01-01" --end "2026-03-31" --kind "A" --pretty
 
 # 기업 개황 조회 (기본 JSON 출력)
@@ -94,6 +101,17 @@ dart list-presenter 삼성전자 --start 2026-01-01 --type 주요사항보고
 
 
 ## Quick Start (API 개발자를 위한)
+### 설치
+
+다음과 같이 설치(혹은 업그레이드) 합니다.
+
+```bash
+# 설치
+pip install opendartreader
+
+# 업그레이드
+pip install --upgrade opendartreader 
+```
 
 ```python
 import OpenDartReader
@@ -110,7 +128,7 @@ dart = OpenDartReader()  # 환경변수 DART_API_KEY 설정 필요
 
 
 ### 1. 공시정보 ###
-# 특정기업(삼성전자) 상장이후 모든 공시 목록 (5,600 건+)
+# 기간을 지정하지 않으면 지난 1년간의 공시목록
 dart.list('삼성전자') # 기업이름 혹은,
 dart.list('005930') # 종목코드를 사용할 수 있습니다.
 

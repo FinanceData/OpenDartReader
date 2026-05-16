@@ -7,12 +7,15 @@ import io
 import os
 import pandas as pd
 import xml.etree.ElementTree as ET
-from datetime import datetime, timedelta
 
 # 1. 공시정보 - 공시검색(목록)
 def list(api_key, corp_code='', start=None, end=None, kind='', kind_detail='', final=False):
-    start = pd.to_datetime(start) if start else pd.to_datetime('1900-01-01')
-    end = pd.to_datetime(end) if end else datetime.today()
+    if start is None and end is None:
+        end = pd.Timestamp.today().normalize()
+        start = end - pd.DateOffset(years=1)
+    else:
+        start = pd.to_datetime(start) if start else pd.to_datetime('1900-01-01')
+        end = pd.to_datetime(end) if end else pd.Timestamp.today().normalize()
     
     url = 'https://opendart.fss.or.kr/api/list.json'
     params = {
