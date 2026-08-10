@@ -211,7 +211,11 @@ def attach_files(arg): # rcp_no or URL
 
 def download(url, fn=None):
     fn = fn if fn else url.split('/')[-1]
-    r = requests.get(url, stream=True, headers={'User-Agent': USER_AGENT})
+    headers = {
+        'User-Agent': USER_AGENT,
+        'Referer': 'http://dart.fss.or.kr/pdf/download/main.do'
+    }
+    r = requests.get(url, stream=True, headers=headers)
     if r.status_code != 200:
         print(r.status_code)
         return None
