@@ -82,3 +82,26 @@ def xbrl_taxonomy(api_key, sj_div='BS1'):
         print(jo)
         return pd.DataFrame()
     return pd.DataFrame(jo['list'])
+
+# 3-6 단일회사 주요 재무지표 (계정과목): api/fnlttSinglIndx.json
+def finindex(api_key, corp_code, bsns_year, reprt_code ,idx_cl_code):
+    url = 'https://opendart.fss.or.kr/api/fnlttSinglIndx.json'
+    params = {
+        'crtfc_key': api_key,
+        'corp_code': corp_code,
+        'bsns_year':  bsns_year,   # 사업년도
+        'reprt_code': reprt_code,   # 11011, 11013, 11012, 11014
+        'idx_cl_code': idx_cl_code, # 수익성지표 : M210000 안정성지표 : M220000 성장성지표 : M230000 활동성지표 : M240000
+    }
+    r = requests.get(url, params=params)
+    jo = r.json() 
+    
+    if 'list' not in jo:
+        print(jo)
+        return pd.DataFrame()
+
+    df = pd.DataFrame(jo['list'])
+    df['idx_val'] = pd.to_numeric(df['idx_val'], errors='coerce')
+    df = df.dropna(subset=['idx_val'])
+    df['idx_val'] = df['idx_val'].round(1)
+    return df
